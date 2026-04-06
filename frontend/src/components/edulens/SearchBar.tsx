@@ -93,8 +93,8 @@ export function SearchBar({
           className={cn(
             'relative flex items-center h-[52px] px-4 rounded-full border bg-white transition-all duration-200',
             isFocused
-              ? 'border-primary shadow-md'
-              : 'border-border hover:border-muted-foreground/50',
+              ? 'border-[1.5px] border-primary shadow-[0_4px_16px_rgba(22,163,74,0.15)]'
+              : 'border-[0.5px] border-border shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:border-muted-foreground/50',
           )}
         >
           {/* Search Icon */}
@@ -217,7 +217,7 @@ export function SearchBar({
             className="absolute left-0 right-0 top-full mt-3 bg-white border border-border rounded-[12px] shadow-md z-40 overflow-hidden"
           >
             <div className="p-4">
-              <p className="text-[13px] font-medium text-muted-foreground mb-3">
+              <p className="text-[12px] text-[#94a3b8] mb-3">
                 Try searching for...
               </p>
               <div className="flex flex-wrap gap-2">
@@ -226,7 +226,7 @@ export function SearchBar({
                     key={suggestion}
                     type="button"
                     onClick={() => handleSuggestionClick(suggestion)}
-                    className="px-3 py-2 rounded-full bg-secondary text-secondary-foreground text-[13px] hover:bg-primary hover:text-primary-foreground transition-colors"
+                    className="px-3.5 py-1.5 rounded-full bg-[#dcfce7] text-[#15803d] text-[13px] hover:bg-primary hover:text-white transition-colors"
                   >
                     {suggestion}
                   </button>

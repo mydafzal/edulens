@@ -107,15 +107,26 @@
 
   --radius: 12px;
 
-  /* Sidebar */
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #16a34a;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0fdf4;
-  --sidebar-accent-foreground: #16a34a;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #16a34a;
+  /* Sidebar - Indigo palette per guidelines */
+  --sidebar: #4338CA;
+  --sidebar-foreground: rgba(255, 255, 255, 0.65);
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #4338CA;
+  --sidebar-accent: rgba(255, 255, 255, 0.18);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: transparent;
+  --sidebar-ring: #ffffff;
+
+  /* Indigo Palette - for accent stat cards */
+  --indigo-50: #eef2ff;
+  --indigo-100: #e0e7ff;
+  --indigo-600: #4f46e5;
+  --indigo-700: #4338CA;
+  --indigo-800: #3730a3;
+  --indigo-900: #312e81;
+
+  /* Sky Palette - for tertiary accent cards */
+  --sky-500: #0ea5e9;
 }
 
 .dark {
