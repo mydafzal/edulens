@@ -3,19 +3,17 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  GraduationCap,
   Sparkles,
   Shield,
   MapPin,
   BookOpen,
-  Menu,
-  X,
   ArrowUpDown,
-  Check
+  Check,
+  X,
+  Filter
 } from 'lucide-react';
-import { SearchBar, ResourceCard, LocalizationPanel } from '@/components/edulens';
+import { SearchBar, ResourceCard, LocalizationPanel, AppShell } from '@/components/edulens';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import type { Resource, ScopeLevel, Adaptation, LocalContext } from '@/types/edulens';
 
 // Sample data for demo
@@ -165,6 +163,13 @@ const sampleLocalContext: LocalContext = {
 
 type SortOption = 'relevance' | 'score' | 'date';
 
+// Active filters type
+interface ActiveFilters {
+  scope: ScopeLevel;
+  yearLevels: string[];
+  subjects: string[];
+}
+
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -172,10 +177,8 @@ export default function Home() {
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [showLocalization, setShowLocalization] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('relevance');
-  const [userLocation, setUserLocation] = useState('Queensland, AU');
-  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [notification, setNotification] = useState<{ message: string } | null>(null);
   const [hasProfile, setHasProfile] = useState(false);
   const [profileData, setProfileData] = useState<{
     schoolName?: string;
@@ -185,6 +188,11 @@ export default function Home() {
     subjects?: string[];
   } | null>(null);
   const [personalizedSuggestions, setPersonalizedSuggestions] = useState<string[]>([]);
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
+    scope: 'state',
+    yearLevels: [],
+    subjects: []
+  });
 
   useEffect(() => {
     const savedProfile = localStorage.getItem('edulens-profile');
@@ -195,18 +203,12 @@ export default function Home() {
       setProfileData(profile);
       setHasProfile(profileCompleted === 'true');
 
-      if (profile.state) {
-        const stateNames: Record<string, string> = {
-          'QLD': 'Queensland',
-          'NSW': 'New South Wales',
-          'VIC': 'Victoria',
-          'SA': 'South Australia',
-          'WA': 'Western Australia',
-          'TAS': 'Tasmania',
-          'NT': 'Northern Territory',
-          'ACT': 'ACT'
-        };
-        setUserLocation(`${stateNames[profile.state] || profile.state}, AU`);
+      // Set active filters from profile
+      if (profile.yearLevels) {
+        setActiveFilters(prev => ({ ...prev, yearLevels: profile.yearLevels }));
+      }
+      if (profile.subjects) {
+        setActiveFilters(prev => ({ ...prev, subjects: profile.subjects }));
       }
 
       const suggestions: string[] = [];
@@ -270,6 +272,12 @@ export default function Home() {
     setSearchQuery(query);
     setIsSearching(true);
     setHasSearched(true);
+    setActiveFilters(prev => ({ ...prev, scope }));
+
+    // Save to search history
+    const history = JSON.parse(localStorage.getItem('edulens-search-history') || '[]');
+    const newHistory = [query, ...history.filter((h: string) => h !== query)].slice(0, 10);
+    localStorage.setItem('edulens-search-history', JSON.stringify(newHistory));
 
     await new Promise(resolve => setTimeout(resolve, 1200));
 
@@ -291,297 +299,285 @@ export default function Home() {
   const handleAcceptAdaptations = (adaptations: Adaptation[]) => {
     setShowLocalization(false);
     setSelectedResource(null);
-    setNotification({
-      message: `${adaptations.length} adaptations applied successfully!`,
-      type: 'success'
-    });
+    setNotification({ message: `${adaptations.length} adaptations applied successfully!` });
     setTimeout(() => setNotification(null), 4000);
   };
 
   const handleSaveResource = (resource: Resource) => {
-    setNotification({
-      message: `"${resource.title}" saved to library.`,
-      type: 'success'
-    });
+    // Actually persist to localStorage for Library feature
+    const saved = JSON.parse(localStorage.getItem('edulens-library') || '[]');
+    const alreadySaved = saved.some((r: Resource) => r.id === resource.id);
+
+    if (!alreadySaved) {
+      saved.push(resource);
+      localStorage.setItem('edulens-library', JSON.stringify(saved));
+      setNotification({ message: `"${resource.title}" saved to library.` });
+    } else {
+      setNotification({ message: 'Already in your library.' });
+    }
     setTimeout(() => setNotification(null), 3000);
   };
 
   const handleShareResource = (resource: Resource) => {
     navigator.clipboard.writeText(resource.source.url);
-    setNotification({
-      message: 'Link copied to clipboard!',
-      type: 'success'
-    });
+    setNotification({ message: 'Link copied to clipboard!' });
     setTimeout(() => setNotification(null), 3000);
   };
 
+  const removeFilter = (type: 'yearLevel' | 'subject', value: string) => {
+    if (type === 'yearLevel') {
+      setActiveFilters(prev => ({
+        ...prev,
+        yearLevels: prev.yearLevels.filter(y => y !== value)
+      }));
+    } else {
+      setActiveFilters(prev => ({
+        ...prev,
+        subjects: prev.subjects.filter(s => s !== value)
+      }));
+    }
+  };
+
+  const scopeLabels: Record<ScopeLevel, string> = {
+    country: 'Australia',
+    state: profileData?.state || 'State',
+    region: 'Region',
+    suburb: profileData?.suburb || 'Local',
+    school: profileData?.schoolName || 'School',
+    class: 'Class',
+    individual: 'Student'
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header - clean, minimal */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur-sm">
-        <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto max-w-6xl">
-          <div className="h-16 flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[12px] bg-primary flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <span className="text-[22px] font-bold tracking-tight">EduLens</span>
-            </div>
-
-            {/* Desktop Nav */}
-            <div className="hidden md:flex items-center gap-4">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-[13px] text-muted-foreground">
-                <MapPin className="w-4 h-4" />
-                {userLocation}
-              </div>
-              <Link href="/profile">
-                <Button variant={hasProfile ? 'outline' : 'default'} size="default" className="h-10">
-                  {hasProfile ? 'Edit Profile' : 'Set Up Profile'}
-                </Button>
-              </Link>
-            </div>
-
-            {/* Mobile Menu */}
-            <button
-              className="md:hidden p-2.5 rounded-[6px] hover:bg-muted transition-colors"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+    <AppShell>
+      <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto max-w-5xl py-6">
+        <AnimatePresence mode="wait">
+          {!hasSearched ? (
+            /* Hero Section */
+            <motion.div
+              key="hero"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="py-8 sm:py-12 space-y-8"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-
-          <AnimatePresence>
-            {mobileMenuOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="md:hidden overflow-hidden border-t"
-              >
-                <div className="py-4 space-y-3">
-                  <div className="flex items-center justify-center gap-1.5 py-2 text-[13px] text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    {userLocation}
-                  </div>
-                  <Link href="/profile" className="block">
-                    <Button size="default" className="w-full h-11">
-                      {hasProfile ? 'Edit Profile' : 'Set Up Profile'}
-                    </Button>
-                  </Link>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </header>
-
-      <main className="flex-1">
-        <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto max-w-6xl py-8">
-          <AnimatePresence mode="wait">
-            {!hasSearched ? (
-              /* Hero Section - Clean and focused */
-              <motion.div
-                key="hero"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="py-12 sm:py-16 space-y-10"
-              >
-                <div className="text-center space-y-5 max-w-2xl mx-auto">
-                  {hasProfile && (
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-[13px] font-medium text-primary"
-                    >
-                      Welcome back, {profileData?.schoolName || userLocation}
-                    </motion.p>
-                  )}
-
-                  <motion.h1
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className="text-[28px] sm:text-[36px] font-bold tracking-tight leading-tight"
-                  >
-                    {hasProfile ? (
-                      <>What are you teaching today?</>
-                    ) : (
-                      <>
-                        Find teaching resources
-                        <br />
-                        <span className="text-primary">for your classroom</span>
-                      </>
-                    )}
-                  </motion.h1>
-
+              <div className="text-center space-y-4 max-w-xl mx-auto">
+                {hasProfile && (
                   <motion.p
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-[15px] text-muted-foreground leading-relaxed"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-[13px] font-medium text-primary"
                   >
-                    {hasProfile ? (
-                      <>
-                        Resources for{' '}
-                        <span className="font-medium text-foreground">
-                          {profileData?.yearLevels?.map(y => `Year ${y}`).join(', ')}
-                        </span>{' '}
-                        {profileData?.subjects?.slice(0, 2).join(', ')}
-                      </>
-                    ) : (
-                      <>
-                        Every resource evaluated for accuracy, bias, and cultural sensitivity.
-                        One-click localization for your students.
-                      </>
-                    )}
+                    Welcome back, {profileData?.schoolName || 'Teacher'}
                   </motion.p>
-                </div>
+                )}
 
-                {/* Search Bar */}
-                <motion.div
+                <motion.h1
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-[28px] sm:text-[32px] font-bold tracking-tight leading-tight"
                 >
-                  <SearchBar
-                    onSearch={handleSearch}
-                    isSearching={isSearching}
-                    placeholder={hasProfile
-                      ? `Search ${profileData?.subjects?.[0] || 'resources'}...`
-                      : "Try 'water scarcity Year 9 Geography'"
-                    }
-                    suggestions={personalizedSuggestions.length > 0 ? personalizedSuggestions : undefined}
-                  />
-                </motion.div>
+                  {hasProfile ? (
+                    <>What are you teaching today?</>
+                  ) : (
+                    <>
+                      Find teaching resources
+                      <br />
+                      <span className="text-primary">for your classroom</span>
+                    </>
+                  )}
+                </motion.h1>
 
-                {/* Features - 3 simple cards */}
-                <motion.div
+                <motion.p
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8"
+                  transition={{ delay: 0.2 }}
+                  className="text-[15px] text-muted-foreground leading-relaxed"
                 >
-                  {[
-                    {
-                      icon: Shield,
-                      title: 'Quality Evaluated',
-                      description: 'Scored on accuracy, bias, and safety'
-                    },
-                    {
-                      icon: MapPin,
-                      title: 'Locally Adapted',
-                      description: 'One-click localization for your region'
-                    },
-                    {
-                      icon: BookOpen,
-                      title: 'Curriculum Aligned',
-                      description: 'Mapped to Australian Curriculum'
-                    }
-                  ].map((feature, i) => (
-                    <div
-                      key={feature.title}
-                      className="p-5 rounded-[12px] border border-border bg-card"
-                    >
-                      <feature.icon className="w-8 h-8 text-primary mb-4" />
-                      <h3 className="text-[15px] font-semibold mb-1">{feature.title}</h3>
-                      <p className="text-[13px] text-muted-foreground">{feature.description}</p>
-                    </div>
-                  ))}
-                </motion.div>
+                  {hasProfile ? (
+                    <>
+                      Resources for{' '}
+                      <span className="font-medium text-foreground">
+                        {profileData?.yearLevels?.map(y => `Year ${y}`).join(', ')}
+                      </span>{' '}
+                      {profileData?.subjects?.slice(0, 2).join(', ')}
+                    </>
+                  ) : (
+                    <>
+                      Every resource evaluated for accuracy, bias, and cultural sensitivity.
+                    </>
+                  )}
+                </motion.p>
+              </div>
 
-                {/* Trusted Sources */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="text-center pt-4"
-                >
-                  <p className="text-[11px] text-muted-foreground mb-3 uppercase tracking-wide font-medium">
-                    Trusted Sources
-                  </p>
-                  <div className="flex items-center justify-center gap-6 text-[13px] text-muted-foreground">
-                    {['ABC Education', 'AIATSIS', 'CSIRO', 'BOM'].map((source) => (
-                      <span key={source}>{source}</span>
-                    ))}
-                  </div>
-                </motion.div>
-              </motion.div>
-            ) : (
-              /* Search Results */
+              {/* Search Bar */}
               <motion.div
-                key="results"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="py-6 space-y-6"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
               >
                 <SearchBar
                   onSearch={handleSearch}
                   isSearching={isSearching}
-                  initialQuery={searchQuery}
+                  placeholder={hasProfile
+                    ? `Search ${profileData?.subjects?.[0] || 'resources'}...`
+                    : "Try 'water scarcity Year 9 Geography'"
+                  }
+                  suggestions={personalizedSuggestions.length > 0 ? personalizedSuggestions : undefined}
                 />
-
-                {/* Results Header */}
-                {!isSearching && searchResults.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-between"
-                  >
-                    <div>
-                      <h2 className="text-[18px] font-semibold">
-                        {searchResults.length} resources
-                      </h2>
-                      <p className="text-[13px] text-muted-foreground">
-                        for &ldquo;{searchQuery}&rdquo;
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="default"
-                      className="gap-2 h-10"
-                      onClick={handleSortChange}
-                    >
-                      <ArrowUpDown className="w-4 h-4" />
-                      {getSortLabel(sortBy)}
-                    </Button>
-                  </motion.div>
-                )}
-
-                {/* Loading State - Skeleton */}
-                {isSearching && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="rounded-[12px] border border-border p-4 space-y-4">
-                        <div className="h-32 rounded-[6px] skeleton" />
-                        <div className="h-5 w-3/4 rounded-[6px] skeleton" />
-                        <div className="h-4 w-full rounded-[6px] skeleton" />
-                        <div className="h-4 w-2/3 rounded-[6px] skeleton" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Results Grid */}
-                {!isSearching && searchResults.length > 0 && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {searchResults.map((resource, index) => (
-                      <ResourceCard
-                        key={resource.id}
-                        resource={resource}
-                        index={index}
-                        onLocalize={handleLocalize}
-                        onSave={handleSaveResource}
-                        onShare={handleShareResource}
-                      />
-                    ))}
-                  </div>
-                )}
               </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+
+              {/* Features */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6"
+              >
+                {[
+                  { icon: Shield, title: 'Quality Evaluated', description: 'Scored on accuracy, bias, and safety' },
+                  { icon: MapPin, title: 'Locally Adapted', description: 'One-click localization for your region' },
+                  { icon: BookOpen, title: 'Curriculum Aligned', description: 'Mapped to Australian Curriculum' }
+                ].map((feature) => (
+                  <div key={feature.title} className="p-5 rounded-[12px] border border-border bg-card">
+                    <feature.icon className="w-8 h-8 text-primary mb-4" />
+                    <h3 className="text-[15px] font-semibold mb-1">{feature.title}</h3>
+                    <p className="text-[13px] text-muted-foreground">{feature.description}</p>
+                  </div>
+                ))}
+              </motion.div>
+
+              {/* Trusted Sources */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="text-center pt-4"
+              >
+                <p className="text-[11px] text-muted-foreground mb-3 uppercase tracking-wide font-medium">
+                  Trusted Sources
+                </p>
+                <div className="flex items-center justify-center gap-6 text-[13px] text-muted-foreground">
+                  {['ABC Education', 'AIATSIS', 'CSIRO', 'BOM'].map((source) => (
+                    <span key={source}>{source}</span>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          ) : (
+            /* Search Results */
+            <motion.div
+              key="results"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="py-4 space-y-5"
+            >
+              <SearchBar
+                onSearch={handleSearch}
+                isSearching={isSearching}
+                initialQuery={searchQuery}
+              />
+
+              {/* Dynamic Filter Chips */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Filter className="w-4 h-4 text-muted-foreground" />
+                <button className="px-3 py-1.5 rounded-full bg-secondary text-primary text-[13px] font-medium">
+                  {scopeLabels[activeFilters.scope]}
+                </button>
+                {activeFilters.yearLevels.length > 0 ? (
+                  activeFilters.yearLevels.map(year => (
+                    <button
+                      key={year}
+                      onClick={() => removeFilter('yearLevel', year)}
+                      className="px-3 py-1.5 rounded-full bg-muted text-foreground text-[13px] font-medium flex items-center gap-1.5 hover:bg-muted/80"
+                    >
+                      Year {year}
+                      <X className="w-3 h-3" />
+                    </button>
+                  ))
+                ) : (
+                  <span className="px-3 py-1.5 rounded-full bg-muted text-muted-foreground text-[13px]">
+                    All Years
+                  </span>
+                )}
+                {activeFilters.subjects.length > 0 ? (
+                  activeFilters.subjects.slice(0, 2).map(subject => (
+                    <button
+                      key={subject}
+                      onClick={() => removeFilter('subject', subject)}
+                      className="px-3 py-1.5 rounded-full bg-muted text-foreground text-[13px] font-medium flex items-center gap-1.5 hover:bg-muted/80"
+                    >
+                      {subject}
+                      <X className="w-3 h-3" />
+                    </button>
+                  ))
+                ) : (
+                  <span className="px-3 py-1.5 rounded-full bg-muted text-muted-foreground text-[13px]">
+                    All Subjects
+                  </span>
+                )}
+              </div>
+
+              {/* Results Header */}
+              {!isSearching && searchResults.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-between"
+                >
+                  <div>
+                    <h2 className="text-[18px] font-semibold">
+                      {searchResults.length} resources
+                    </h2>
+                    <p className="text-[13px] text-muted-foreground">
+                      for &ldquo;{searchQuery}&rdquo;
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="default"
+                    className="gap-2 h-10"
+                    onClick={handleSortChange}
+                  >
+                    <ArrowUpDown className="w-4 h-4" />
+                    {getSortLabel(sortBy)}
+                  </Button>
+                </motion.div>
+              )}
+
+              {/* Loading State */}
+              {isSearching && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="rounded-[12px] border border-border p-4 space-y-4">
+                      <div className="h-32 rounded-[6px] skeleton" />
+                      <div className="h-5 w-3/4 rounded-[6px] skeleton" />
+                      <div className="h-4 w-full rounded-[6px] skeleton" />
+                      <div className="h-4 w-2/3 rounded-[6px] skeleton" />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Results Grid */}
+              {!isSearching && searchResults.length > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {searchResults.map((resource, index) => (
+                    <ResourceCard
+                      key={resource.id}
+                      resource={resource}
+                      index={index}
+                      onLocalize={handleLocalize}
+                      onSave={handleSaveResource}
+                      onShare={handleShareResource}
+                    />
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Localization Panel Modal */}
         <AnimatePresence>
@@ -612,44 +608,30 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
-      </main>
 
-      {/* Notification Toast - Simple */}
-      <AnimatePresence>
-        {notification && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
-          >
-            <div className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-[12px] shadow-md">
-              <Check className="w-5 h-5 text-success flex-shrink-0" />
-              <p className="text-[15px]">{notification.message}</p>
-              <button
-                onClick={() => setNotification(null)}
-                className="p-1.5 rounded-[6px] hover:bg-muted transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Footer - Minimal */}
-      <footer className="border-t mt-auto">
-        <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto max-w-6xl py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-muted-foreground">
-            <p>Cambridge Hackathon 2025</p>
-            <div className="flex items-center gap-6">
-              <Link href="/about" className="hover:text-foreground transition-colors">About</Link>
-              <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-              <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
+        {/* Notification Toast - NO semantic colors */}
+        <AnimatePresence>
+          {notification && (
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
+              className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-50"
+            >
+              <div className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-[12px] shadow-md">
+                <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                <p className="text-[15px]">{notification.message}</p>
+                <button
+                  onClick={() => setNotification(null)}
+                  className="p-1.5 rounded-[6px] hover:bg-muted transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </AppShell>
   );
 }

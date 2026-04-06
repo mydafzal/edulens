@@ -326,3 +326,8 @@
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
+
+/* Safe area for iPhone notch */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

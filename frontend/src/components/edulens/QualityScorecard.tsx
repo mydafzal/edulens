@@ -1,9 +1,11 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Info } from 'lucide-react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Info, ChevronDown, ChevronUp, MessageSquarePlus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { QualityScorecard as QualityScorecardType, QualityDimension, QualityLevel } from '@/types/edulens';
+import { Button } from '@/components/ui/button';
 import {
   Tooltip,
   TooltipContent,
@@ -15,6 +17,7 @@ interface QualityScorecardProps {
   compact?: boolean;
   showRationale?: boolean;
   className?: string;
+  onOverride?: (dimension: string, note: string) => void;
 }
 
 // Semantic colors per guidelines - ONLY for scorecard
@@ -77,47 +80,135 @@ function DotIndicator({
 
 function QualityIndicator({
   dimension,
-  index
+  index,
+  isExpanded,
+  onToggle,
+  onOverride
 }: {
   dimension: QualityDimension;
   index: number;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onOverride?: (dimension: string, note: string) => void;
 }) {
+  const [showOverrideInput, setShowOverrideInput] = useState(false);
+  const [overrideNote, setOverrideNote] = useState('');
   const config = levelConfig[dimension.level];
   // Calculate filled dots based on score (0-100 -> 0-5 dots)
   const filledDots = Math.round((dimension.score / 100) * 5);
 
+  const handleOverrideSubmit = () => {
+    if (overrideNote.trim() && onOverride) {
+      onOverride(dimension.name, overrideNote.trim());
+      setOverrideNote('');
+      setShowOverrideInput(false);
+    }
+  };
+
   return (
-    <Tooltip>
-      <TooltipTrigger>
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05, duration: 0.3 }}
-          className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg bg-muted/50 cursor-help transition-all hover:bg-muted"
-        >
-          <span className="text-[15px] font-medium text-foreground">
-            {dimensionLabels[dimension.name]}
-          </span>
-          <DotIndicator filled={filledDots} colorClass={config.dotColor} />
-        </motion.div>
-      </TooltipTrigger>
-      <TooltipContent
-        side="top"
-        className="max-w-xs p-3 bg-card border"
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05, duration: 0.3 }}
+      className="rounded-[12px] bg-muted/50 overflow-hidden"
+    >
+      {/* Tappable row header */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between gap-4 px-4 py-3 cursor-pointer transition-colors hover:bg-muted active:bg-muted/80"
       >
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className={cn('font-semibold', config.dotColor)}>{config.label}</span>
-            <span className="text-muted-foreground text-sm">
-              ({dimension.score}/100)
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {dimension.rationale}
-          </p>
+        <span className="text-[15px] font-medium text-foreground">
+          {dimensionLabels[dimension.name]}
+        </span>
+        <div className="flex items-center gap-3">
+          <DotIndicator filled={filledDots} colorClass={config.dotColor} />
+          {isExpanded ? (
+            <ChevronUp className="w-4 h-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          )}
         </div>
-      </TooltipContent>
-    </Tooltip>
+      </button>
+
+      {/* Expandable content */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className={cn('font-semibold text-[13px]', config.dotColor)}>{config.label}</span>
+                <span className="text-muted-foreground text-[13px]">
+                  ({dimension.score}/100)
+                </span>
+              </div>
+              <p className="text-[15px] text-muted-foreground leading-relaxed">
+                {dimension.rationale}
+              </p>
+
+              {/* Override button */}
+              {onOverride && !showOverrideInput && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 text-[13px] h-8 px-3"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowOverrideInput(true);
+                  }}
+                >
+                  <MessageSquarePlus className="w-4 h-4" />
+                  Add Note / Override
+                </Button>
+              )}
+
+              {/* Override input */}
+              {showOverrideInput && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-2"
+                >
+                  <textarea
+                    value={overrideNote}
+                    onChange={(e) => setOverrideNote(e.target.value)}
+                    placeholder="Add your note or reason for override..."
+                    className="w-full p-3 rounded-[6px] border border-border bg-card text-[15px] resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                    rows={2}
+                  />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      className="h-8 px-4 rounded-[24px]"
+                      onClick={handleOverrideSubmit}
+                      disabled={!overrideNote.trim()}
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-3"
+                      onClick={() => {
+                        setShowOverrideInput(false);
+                        setOverrideNote('');
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
@@ -231,8 +322,11 @@ function OverallScore({ score }: { score: number }) {
 export function QualityScorecard({
   scorecard,
   compact = false,
-  className
+  className,
+  onOverride
 }: QualityScorecardProps) {
+  const [expandedDimension, setExpandedDimension] = useState<string | null>(null);
+
   if (compact) {
     return <CompactScorecard scorecard={scorecard} />;
   }
@@ -244,6 +338,10 @@ export function QualityScorecard({
     scorecard.culturalSensitivity,
     scorecard.safety,
   ];
+
+  const toggleDimension = (name: string) => {
+    setExpandedDimension(expandedDimension === name ? null : name);
+  };
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -258,7 +356,7 @@ export function QualityScorecard({
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 Every resource is evaluated across 5 dimensions.
-                Hover over each indicator for details.
+                Tap each row for details.
               </TooltipContent>
             </Tooltip>
           </div>
@@ -268,6 +366,9 @@ export function QualityScorecard({
                 key={dim.name}
                 dimension={dim}
                 index={i}
+                isExpanded={expandedDimension === dim.name}
+                onToggle={() => toggleDimension(dim.name)}
+                onOverride={onOverride}
               />
             ))}
           </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileText,
@@ -59,8 +60,16 @@ export function ResourceCard({
   className,
   index = 0
 }: ResourceCardProps) {
+  const [isBookmarkBouncing, setIsBookmarkBouncing] = useState(false);
   const typeInfo = typeConfig[resource.type];
   const TypeIcon = typeInfo.icon;
+
+  const handleSave = () => {
+    setIsBookmarkBouncing(true);
+    onSave?.(resource);
+    // Reset animation after it completes
+    setTimeout(() => setIsBookmarkBouncing(false), 300);
+  };
 
   return (
     <motion.div
@@ -182,9 +191,9 @@ export function ResourceCard({
                 variant="outline"
                 size="icon"
                 className="h-11 w-11"
-                onClick={() => onSave?.(resource)}
+                onClick={handleSave}
               >
-                <Bookmark className="w-5 h-5" />
+                <Bookmark className={cn('w-5 h-5', isBookmarkBouncing && 'animate-bounce-save')} />
               </Button>
               <Button
                 variant="outline"
