@@ -1,0 +1,328 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* EduLens Design System - Following Design Guidelines */
+@theme inline {
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: ui-monospace, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Semantic Colors for Scorecard */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  /* Radius system per guidelines */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+}
+
+:root {
+  /* Primary Palette - Green */
+  --primary: #16a34a;
+  --primary-hover: #22c55e;
+  --primary-light: #dcfce7;
+  --primary-tint: #f0fdf4;
+  --primary-foreground: #ffffff;
+
+  /* Neutral Palette */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  /* Secondary uses primary-light */
+  --secondary: #dcfce7;
+  --secondary-foreground: #16a34a;
+
+  /* Muted - neutral-100/400 */
+  --muted: #f1f5f9;
+  --muted-foreground: #94a3b8;
+
+  /* Accent */
+  --accent: #f0fdf4;
+  --accent-foreground: #16a34a;
+
+  /* Borders - neutral-200 */
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #16a34a;
+
+  /* Semantic Colors - Reserved for Scorecard ONLY */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+
+  --destructive: #ef4444;
+
+  /* Charts */
+  --chart-1: #16a34a;
+  --chart-2: #22c55e;
+  --chart-3: #4ade80;
+  --chart-4: #86efac;
+  --chart-5: #dcfce7;
+
+  --radius: 12px;
+
+  /* Sidebar */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #16a34a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0fdf4;
+  --sidebar-accent-foreground: #16a34a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #16a34a;
+}
+
+.dark {
+  --primary: #22c55e;
+  --primary-hover: #4ade80;
+  --primary-light: #14532d;
+  --primary-tint: #052e16;
+  --primary-foreground: #052e16;
+
+  --background: #0f172a;
+  --foreground: #f8fafc;
+
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+
+  --popover: #1e293b;
+  --popover-foreground: #f8fafc;
+
+  --secondary: #14532d;
+  --secondary-foreground: #dcfce7;
+
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+
+  --accent: #052e16;
+  --accent-foreground: #dcfce7;
+
+  --border: #334155;
+  --input: #334155;
+  --ring: #22c55e;
+
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+
+  --destructive: #f87171;
+
+  --sidebar: #1e293b;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #22c55e;
+  --sidebar-primary-foreground: #052e16;
+  --sidebar-accent: #052e16;
+  --sidebar-accent-foreground: #dcfce7;
+  --sidebar-border: #334155;
+  --sidebar-ring: #22c55e;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  html {
+    @apply scroll-smooth;
+  }
+  /* Focus states - visible primary outline per guidelines */
+  *:focus {
+    outline: none;
+  }
+  *:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  /* Typography scale per guidelines */
+  h1, .display {
+    font-size: 1.75rem; /* 28px */
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  h2, .heading-1 {
+    font-size: 1.375rem; /* 22px */
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  h3, .heading-2 {
+    font-size: 1.125rem; /* 18px */
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  h4, .heading-3 {
+    font-size: 0.9375rem; /* 15px */
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .body-sm {
+    font-size: 0.8125rem; /* 13px */
+  }
+  .caption {
+    font-size: 0.6875rem; /* 11px */
+    font-weight: 500;
+  }
+}
+
+/* Shadows per guidelines */
+@layer utilities {
+  .shadow-sm {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .shadow-md {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+  }
+  .shadow-lg {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  }
+
+  /* Semantic flag backgrounds - ONLY for scorecard */
+  .flag-success {
+    background-color: #dcfce7;
+    color: #15803d;
+  }
+  .flag-warning {
+    background-color: #fef3c7;
+    color: #b45309;
+  }
+  .flag-danger {
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+
+  /* Subject/Type chips */
+  .chip-subject {
+    background-color: var(--primary-light);
+    color: var(--primary);
+  }
+  .chip-neutral {
+    background-color: var(--muted);
+    color: #334155;
+  }
+
+  /* Stroke colors for SVG (scorecard) */
+  .stroke-success {
+    stroke: var(--success);
+  }
+  .stroke-warning {
+    stroke: var(--warning);
+  }
+  .stroke-danger {
+    stroke: var(--danger);
+  }
+}
+
+/* Animations per guidelines - 200ms ease-out */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce-save {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.2s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-bounce-save {
+  animation: bounce-save 0.3s ease-out;
+}
+
+/* Skeleton loader - not spinner */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f1f5f9 0%,
+    #e2e8f0 50%,
+    #f1f5f9 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
