@@ -139,20 +139,26 @@ export function ResourceCard({
               )}
             </div>
 
-            {/* Tags - chip-subject for topics, chip-neutral for others */}
+            {/* Tags - chip-subject for subject tags, chip-neutral for others */}
             {resource.tags && resource.tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {resource.tags.slice(0, 3).map((tag, i) => (
-                  <span
-                    key={tag}
-                    className={cn(
-                      'px-3 py-1 rounded-full text-[13px] font-medium',
-                      i === 0 ? 'chip-subject' : 'chip-neutral'
-                    )}
-                  >
-                    {tag}
-                  </span>
-                ))}
+                {resource.tags.slice(0, 3).map((tag) => {
+                  // Check if tag is a subject (semantic coloring, not index-based)
+                  const isSubjectTag = resource.subjects?.some(
+                    s => s.toLowerCase() === tag.toLowerCase()
+                  );
+                  return (
+                    <span
+                      key={tag}
+                      className={cn(
+                        'px-3 py-1 rounded-full text-[13px] font-medium',
+                        isSubjectTag ? 'chip-subject' : 'chip-neutral'
+                      )}
+                    >
+                      {tag}
+                    </span>
+                  );
+                })}
                 {resource.tags.length > 3 && (
                   <span className="chip-neutral px-3 py-1 rounded-full text-[13px] font-medium">
                     +{resource.tags.length - 3}

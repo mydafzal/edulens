@@ -121,7 +121,8 @@ function AdaptationItem({
             className="overflow-hidden"
           >
             <div className="p-5 pt-0 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {/* Always single column - no sm:grid-cols-2 as per guidelines (never grid-cols-2 inside bottom sheets) */}
+              <div className="grid grid-cols-1 gap-4">
                 {/* Original */}
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">

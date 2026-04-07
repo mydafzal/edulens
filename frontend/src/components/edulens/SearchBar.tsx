@@ -13,6 +13,12 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { ScopeLevel } from '@/types/edulens';
 
+interface FilterChip {
+  label: string;
+  active?: boolean;
+  onClick?: () => void;
+}
+
 interface SearchBarProps {
   onSearch: (query: string, scope: ScopeLevel) => void;
   isSearching?: boolean;
@@ -20,6 +26,8 @@ interface SearchBarProps {
   className?: string;
   initialQuery?: string;
   suggestions?: string[];
+  filterChips?: FilterChip[];
+  showFilterChips?: boolean;
 }
 
 const scopeConfig: Record<ScopeLevel, {
@@ -52,6 +60,8 @@ export function SearchBar({
   className,
   initialQuery = '',
   suggestions = exampleQueries,
+  filterChips,
+  showFilterChips = true,
 }: SearchBarProps) {
   const [query, setQuery] = useState(initialQuery);
   const [scope, setScope] = useState<ScopeLevel>('state');
@@ -237,18 +247,26 @@ export function SearchBar({
         )}
       </AnimatePresence>
 
-      {/* Filter chips below search */}
-      <div className="flex items-center gap-2 mt-4 flex-wrap">
-        <span className="chip-neutral px-3 py-1.5 rounded-full text-[13px]">
-          {scopeConfig[scope].label}
-        </span>
-        <span className="chip-neutral px-3 py-1.5 rounded-full text-[13px]">
-          Year 7-12
-        </span>
-        <span className="chip-neutral px-3 py-1.5 rounded-full text-[13px]">
-          All Subjects
-        </span>
-      </div>
+      {/* Filter chips below search - dynamic from props */}
+      {showFilterChips && filterChips && filterChips.length > 0 && (
+        <div className="flex items-center gap-2 mt-4 flex-wrap">
+          {filterChips.map((chip, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={chip.onClick}
+              className={cn(
+                'px-3 py-1.5 rounded-full text-[13px] transition-colors',
+                chip.active
+                  ? 'bg-secondary text-secondary-foreground border border-primary'
+                  : 'chip-neutral'
+              )}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

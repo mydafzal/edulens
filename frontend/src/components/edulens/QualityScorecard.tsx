@@ -213,6 +213,7 @@ function QualityIndicator({
 }
 
 function CompactScorecard({ scorecard }: { scorecard: QualityScorecardType }) {
+  const [expandedDim, setExpandedDim] = useState<string | null>(null);
   const dimensions = [
     scorecard.accuracy,
     scorecard.bias,
@@ -222,30 +223,64 @@ function CompactScorecard({ scorecard }: { scorecard: QualityScorecardType }) {
   ];
 
   return (
-    <div className="flex items-center gap-2">
-      {dimensions.map((dim, i) => {
-        const config = levelConfig[dim.level];
-        const filledDots = Math.round((dim.score / 100) * 5);
-        return (
-          <Tooltip key={dim.name}>
-            <TooltipTrigger>
-              <motion.div
+    <div className="space-y-2">
+      {/* Dots row - tappable on mobile */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {dimensions.map((dim, i) => {
+          const config = levelConfig[dim.level];
+          const filledDots = Math.round((dim.score / 100) * 5);
+          const isExpanded = expandedDim === dim.name;
+          return (
+            <button
+              key={dim.name}
+              type="button"
+              onClick={() => setExpandedDim(isExpanded ? null : dim.name)}
+              className={cn(
+                'flex items-center gap-1.5 px-2 py-1 rounded-[6px] transition-colors min-h-[32px]',
+                isExpanded ? 'bg-muted' : 'hover:bg-muted/50'
+              )}
+            >
+              <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                {dimensionLabels[dim.name].slice(0, 3)}
+              </span>
+              <motion.span
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: i * 0.05 }}
-                className="cursor-help"
+                className={cn('text-xs', config.dotColor)}
               >
-                <span className={cn('text-xs', config.dotColor)}>
-                  {'●'.repeat(filledDots)}{'○'.repeat(5 - filledDots)}
-                </span>
-              </motion.div>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">
-              <span className="font-medium">{dimensionLabels[dim.name]}</span>: {dim.rationale}
-            </TooltipContent>
-          </Tooltip>
-        );
-      })}
+                {'●'.repeat(filledDots)}{'○'.repeat(5 - filledDots)}
+              </motion.span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Expanded detail - shown when tapped */}
+      <AnimatePresence>
+        {expandedDim && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="overflow-hidden"
+          >
+            {dimensions.filter(d => d.name === expandedDim).map(dim => {
+              const config = levelConfig[dim.level];
+              return (
+                <div key={dim.name} className="p-2 rounded-[6px] bg-muted text-[13px]">
+                  <span className={cn('font-medium', config.dotColor)}>
+                    {dimensionLabels[dim.name]}
+                  </span>
+                  <span className="text-muted-foreground ml-1">({dim.score}/100)</span>
+                  <p className="text-muted-foreground mt-1 leading-relaxed">{dim.rationale}</p>
+                </div>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

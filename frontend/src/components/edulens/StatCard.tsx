@@ -30,34 +30,44 @@ const variantStyles: Record<CardVariant, {
   labelColor: string;
   valueColor: string;
   subLabelColor: string;
+  progressBg: string;
+  progressFill: string;
 }> = {
   default: {
-    bg: 'bg-white',
-    border: 'border-[0.5px] border-[#e2e8f0]',
-    labelColor: 'text-[#94a3b8]',
-    valueColor: 'text-[#0f172a]',
-    subLabelColor: 'text-[#94a3b8]',
+    bg: 'bg-card',
+    border: 'border border-border',
+    labelColor: 'text-muted-foreground',
+    valueColor: 'text-foreground',
+    subLabelColor: 'text-muted-foreground',
+    progressBg: 'bg-border',
+    progressFill: 'bg-primary',
   },
   green: {
-    bg: 'bg-[#16a34a]',
+    bg: 'bg-primary',
     border: '',
-    labelColor: 'text-white/70',
-    valueColor: 'text-white',
-    subLabelColor: 'text-white/70',
+    labelColor: 'text-primary-foreground/70',
+    valueColor: 'text-primary-foreground',
+    subLabelColor: 'text-primary-foreground/70',
+    progressBg: 'bg-primary-foreground/30',
+    progressFill: 'bg-primary-foreground',
   },
   indigo: {
-    bg: 'bg-[#4338CA]',
+    bg: 'bg-sidebar',
     border: '',
-    labelColor: 'text-white/70',
-    valueColor: 'text-white',
-    subLabelColor: 'text-white/70',
+    labelColor: 'text-sidebar-foreground',
+    valueColor: 'text-sidebar-accent-foreground',
+    subLabelColor: 'text-sidebar-foreground',
+    progressBg: 'bg-sidebar-accent/30',
+    progressFill: 'bg-sidebar-accent-foreground',
   },
   sky: {
-    bg: 'bg-[#0ea5e9]',
+    bg: 'bg-info',
     border: '',
     labelColor: 'text-white/70',
     valueColor: 'text-white',
     subLabelColor: 'text-white/70',
+    progressBg: 'bg-white/30',
+    progressFill: 'bg-white',
   },
 };
 
@@ -122,8 +132,8 @@ export function StatCard({
         <p className={cn(
           'text-[11px] mt-1.5',
           variant === 'default'
-            ? change.positive !== false ? 'text-[#16a34a]' : 'text-[#ef4444]'
-            : 'text-white/90'
+            ? change.positive !== false ? 'text-primary' : 'text-destructive'
+            : styles.valueColor
         )}>
           {change.positive !== false ? '↑' : '↓'} {change.value}
         </p>
@@ -132,18 +142,12 @@ export function StatCard({
       {/* Progress bar */}
       {progress && (
         <div className="mt-3">
-          <div className={cn(
-            'h-1 rounded-full',
-            variant === 'default' ? 'bg-[#e2e8f0]' : 'bg-white/30'
-          )}>
+          <div className={cn('h-1 rounded-full', styles.progressBg)}>
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${(progress.current / progress.total) * 100}%` }}
               transition={{ duration: 0.8, ease: 'easeOut' }}
-              className={cn(
-                'h-full rounded-full',
-                variant === 'default' ? 'bg-[#16a34a]' : 'bg-white'
-              )}
+              className={cn('h-full rounded-full', styles.progressFill)}
             />
           </div>
         </div>

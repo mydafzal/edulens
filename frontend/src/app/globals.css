@@ -276,6 +276,7 @@
 }
 
 /* Animations per guidelines - 200ms ease-out */
+/* Wrapped in prefers-reduced-motion as per accessibility guidelines */
 @keyframes fade-in-up {
   from {
     opacity: 0;
@@ -305,19 +306,6 @@
   }
 }
 
-.animate-fade-in-up {
-  animation: fade-in-up 0.2s ease-out forwards;
-}
-
-.animate-slide-up {
-  animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.animate-bounce-save {
-  animation: bounce-save 0.3s ease-out;
-}
-
-/* Skeleton loader - not spinner */
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -327,6 +315,26 @@
   }
 }
 
+/* Apply animations only when user prefers motion */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-fade-in-up {
+    animation: fade-in-up 0.2s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .animate-bounce-save {
+    animation: bounce-save 0.3s ease-out;
+  }
+
+  .skeleton {
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+/* Skeleton loader - static fallback when motion reduced */
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -335,7 +343,17 @@
     #f1f5f9 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+}
+
+/* Reduced motion: instant transitions */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Safe area for iPhone notch */

@@ -139,8 +139,8 @@ export default function ProfileSetup() {
                     {s < step ? <Check className="w-5 h-5" /> : s}
                   </div>
                   {s < 3 && (
-                    <div className={`w-16 h-1 mx-2 rounded-full transition-colors ${
-                      s < step ? 'bg-primary/30' : 'bg-muted'
+                    <div className={`w-12 h-[2px] mx-2 rounded-full transition-colors ${
+                      s < step ? 'bg-primary' : 'bg-border'
                     }`} />
                   )}
                 </div>
