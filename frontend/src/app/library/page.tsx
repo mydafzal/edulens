@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bookmark, Search, Trash2, FolderOpen } from 'lucide-react';
+import { Bookmark, Search, Trash2, FolderOpen, LayoutGrid, List, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AppShell, ResourceCard } from '@/components/edulens';
 import Link from 'next/link';
@@ -11,6 +11,7 @@ import type { Resource } from '@/types/edulens';
 export default function LibraryPage() {
   const [savedResources, setSavedResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     const saved = localStorage.getItem('edulens-library');
@@ -29,14 +30,44 @@ export default function LibraryPage() {
   return (
     <AppShell>
       <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto max-w-5xl py-6">
-        {/* Header */}
+        {/* Header with Toolbar */}
         <div className="flex items-center justify-between mb-6">
-          <div>
+          <div className="flex items-center gap-3">
             <h1 className="text-[22px] font-bold">Saved Library</h1>
-            <p className="text-[13px] text-muted-foreground">
-              {savedResources.length} {savedResources.length === 1 ? 'resource' : 'resources'} saved
-            </p>
+            <span className="px-2.5 py-1 rounded-full bg-secondary text-primary text-[13px] font-medium">
+              {savedResources.length}
+            </span>
           </div>
+
+          {savedResources.length > 0 && (
+            <div className="flex items-center gap-2">
+              {/* Grid/List Toggle */}
+              <div className="flex items-center rounded-[8px] border border-border p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-[6px] transition-colors ${
+                    viewMode === 'grid' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-[6px] transition-colors ${
+                    viewMode === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Filter Button */}
+              <Button variant="outline" size="sm" className="gap-2 h-9">
+                <Filter className="w-4 h-4" />
+                Filter
+              </Button>
+            </div>
+          )}
         </div>
 
         {isLoading ? (
@@ -56,8 +87,8 @@ export default function LibraryPage() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center py-16 text-center"
           >
-            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
-              <FolderOpen className="w-10 h-10 text-muted-foreground" />
+            <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mb-6">
+              <FolderOpen className="w-10 h-10 text-primary" />
             </div>
             <h2 className="text-[18px] font-semibold mb-2">No saved resources yet</h2>
             <p className="text-[15px] text-muted-foreground max-w-sm mb-6">

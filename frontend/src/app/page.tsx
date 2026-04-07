@@ -12,7 +12,8 @@ import {
   X,
   Filter
 } from 'lucide-react';
-import { SearchBar, ResourceCard, LocalizationPanel, AppShell } from '@/components/edulens';
+import { SearchBar, ResourceCard, LocalizationPanel, AppShell, StatCard } from '@/components/edulens';
+import { BookMarked, FileText, Zap, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Resource, ScopeLevel, Adaptation, LocalContext } from '@/types/edulens';
 
@@ -410,6 +411,49 @@ export default function Home() {
                   )}
                 </motion.p>
               </div>
+
+              {/* Stat Cards - Only show when profile exists */}
+              {hasProfile && (
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.25 }}
+                  className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+                >
+                  <StatCard
+                    label="Saved Resources"
+                    value={JSON.parse(localStorage.getItem('edulens-library') || '[]').length}
+                    subLabel="in your library"
+                    variant="green"
+                    icon={BookMarked}
+                    index={0}
+                  />
+                  <StatCard
+                    label="Lesson Plans"
+                    value={0}
+                    subLabel="created"
+                    variant="default"
+                    icon={FileText}
+                    index={1}
+                  />
+                  <StatCard
+                    label="Workflows"
+                    value={0}
+                    subLabel="active"
+                    variant="indigo"
+                    icon={Zap}
+                    index={2}
+                  />
+                  <StatCard
+                    label="This Week"
+                    value={3}
+                    subLabel="searches"
+                    variant="default"
+                    icon={TrendingUp}
+                    index={3}
+                  />
+                </motion.div>
+              )}
 
               {/* Search Bar */}
               <motion.div

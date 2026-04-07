@@ -25,8 +25,8 @@ export default function WorkflowsPage() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center justify-center py-16 text-center"
         >
-          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
-            <Workflow className="w-10 h-10 text-muted-foreground" />
+          <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mb-6">
+            <Workflow className="w-10 h-10 text-primary" />
           </div>
           <h2 className="text-[18px] font-semibold mb-2">No workflows configured</h2>
           <p className="text-[15px] text-muted-foreground max-w-sm mb-6">

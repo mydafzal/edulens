@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import {
   Search,
   BookMarked,
@@ -11,7 +12,8 @@ import {
   User,
   Settings,
   LogOut,
-  GraduationCap
+  GraduationCap,
+  MapPin
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -158,6 +160,69 @@ export function DesktopSidebar() {
   );
 }
 
+// Desktop content top bar with greeting, location, and avatar
+export function ContentTopBar() {
+  const [profileData, setProfileData] = useState<{
+    schoolName?: string;
+    state?: string;
+    suburb?: string;
+  } | null>(null);
+  const [hasProfile, setHasProfile] = useState(false);
+
+  useEffect(() => {
+    const savedProfile = localStorage.getItem('edulens-profile');
+    const profileCompleted = localStorage.getItem('edulens-profile-completed');
+    if (savedProfile) {
+      setProfileData(JSON.parse(savedProfile));
+      setHasProfile(profileCompleted === 'true');
+    }
+  }, []);
+
+  const getInitial = () => {
+    if (profileData?.schoolName) {
+      return profileData.schoolName.charAt(0).toUpperCase();
+    }
+    return 'T';
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  return (
+    <div className="hidden md:flex h-16 items-center justify-between px-6 border-b border-border bg-card">
+      {/* Left: Greeting */}
+      <div className="flex items-center gap-3">
+        <span className="text-[15px] text-muted-foreground">
+          {getGreeting()},{' '}
+          <span className="font-medium text-foreground">
+            {hasProfile && profileData?.schoolName ? profileData.schoolName : 'Teacher'}
+          </span>
+        </span>
+      </div>
+
+      {/* Right: Location chip + Avatar */}
+      <div className="flex items-center gap-4">
+        {hasProfile && profileData?.state && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-[13px] text-muted-foreground">
+            <MapPin className="w-3.5 h-3.5" />
+            <span>{profileData.suburb || profileData.state}</span>
+          </div>
+        )}
+        <Link
+          href="/profile"
+          className="w-9 h-9 rounded-full bg-sidebar flex items-center justify-center hover:opacity-90 transition-opacity"
+        >
+          <span className="text-sm font-medium text-sidebar-primary-foreground">{getInitial()}</span>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
@@ -167,6 +232,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main content area - offset for 56px sidebar on desktop, top/bottom padding for mobile nav */}
       <main className="md:ml-14 pt-14 md:pt-0 pb-20 md:pb-0 min-h-screen">
+        <ContentTopBar />
         {children}
       </main>
     </div>

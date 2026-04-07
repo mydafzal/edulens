@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AppShell } from '@/components/edulens';
 import Link from 'next/link';
 
 const australianStates = [
@@ -109,24 +110,9 @@ export default function ProfileSetup() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header - Simple */}
-      <header className="border-b">
-        <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto max-w-6xl">
-          <div className="h-16 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[12px] bg-primary flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <span className="text-[22px] font-bold tracking-tight">EduLens</span>
-            </Link>
-            <span className="text-[13px] text-muted-foreground">Profile Setup</span>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-xl">
+    <AppShell>
+      <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto max-w-xl py-6">
+        <div className="w-full">
           {/* Progress Steps */}
           {step < 4 && (
             <div className="flex items-center justify-center gap-2 mb-8">
@@ -249,7 +235,7 @@ export default function ProfileSetup() {
                             <button
                               key={state.code}
                               onClick={() => setProfile(prev => ({ ...prev, state: state.code }))}
-                              className={`h-11 rounded-[6px] border text-[15px] font-medium transition-colors ${
+                              className={`h-11 rounded-full border text-[15px] font-medium transition-colors ${
                                 profile.state === state.code
                                   ? 'border-primary bg-secondary text-primary'
                                   : 'border-border hover:border-primary/50'
@@ -357,7 +343,7 @@ export default function ProfileSetup() {
             )}
           </motion.div>
         </div>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }
