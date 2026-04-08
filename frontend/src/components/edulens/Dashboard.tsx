@@ -55,6 +55,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getToolsForRole, mockChatHistory, type ChatHistoryEntry } from '@/data/mockData';
 import type { ScopeLevel, ToolCard } from '@/types/edulens';
 import { SearchPipeline } from './SearchPipeline';
+import { ClassroomContext, loadClassroomContext, type ClassroomContextData } from './ClassroomContext';
 
 // Icon mapping for tool cards
 const toolIconMap: Record<string, typeof FileText> = {
@@ -82,6 +83,7 @@ export function Dashboard() {
   const [chatHistory, setChatHistory] = useState<ChatHistoryEntry[]>([]);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [teachingTo, setTeachingTo] = useState<GradeLevel | null>(null);
+  const [classroomContext, setClassroomContext] = useState<ClassroomContextData>(loadClassroomContext);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const tools = user?.role ? getToolsForRole(user.role) : [];
@@ -336,6 +338,7 @@ export function Dashboard() {
                 onNewSearch={handleSearch}
                 userRole={user?.role || 'teacher'}
                 teachingTo={teachingTo || 'all'}
+                classroomContext={classroomContext}
               />
             ) : (
               <HomeView
@@ -350,6 +353,8 @@ export function Dashboard() {
                 teachingTo={teachingTo}
                 setTeachingTo={setTeachingTo}
                 gradeLevels={GRADE_LEVELS}
+                classroomContext={classroomContext}
+                setClassroomContext={setClassroomContext}
               />
             )}
           </AnimatePresence>
@@ -424,6 +429,8 @@ function HomeView({
   teachingTo,
   setTeachingTo,
   gradeLevels,
+  classroomContext,
+  setClassroomContext,
 }: {
   tools: ToolCard[];
   onSearch: (q: string) => void;
@@ -435,6 +442,8 @@ function HomeView({
   teachingTo: GradeLevel | null;
   setTeachingTo: (g: GradeLevel) => void;
   gradeLevels: readonly { id: string; label: string; ages: string }[];
+  classroomContext: ClassroomContextData;
+  setClassroomContext: (ctx: ClassroomContextData) => void;
 }) {
   const suggestions = [
     'Water scarcity Year 9 Geography Queensland',
@@ -565,6 +574,12 @@ function HomeView({
             )}
           </div>
         </motion.div>
+
+        {/* Classroom Context — Localised content embedding */}
+        <ClassroomContext
+          context={classroomContext}
+          onChange={setClassroomContext}
+        />
 
         {/* Suggestions */}
         <motion.div

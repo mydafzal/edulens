@@ -71,6 +71,43 @@ def _build_system_prompt(agent_type: str, state: 'PipelineState') -> str:
     grade_desc = GRADE_CONTEXT.get(state.grade_level, GRADE_CONTEXT["middle"])
     subject_line = f"Subject area: {state.subject}." if state.subject else ""
 
+    # Build localisation context from classroom data
+    ctx = state.classroom_context or {}
+    local_lines = []
+    if ctx.get("town") or ctx.get("state"):
+        local_lines.append(f"- Location: {', '.join(filter(None, [ctx.get('schoolName', ''), ctx.get('town', ''), ctx.get('state', ''), ctx.get('country', 'Australia')]))}")
+    if ctx.get("firstNationsContext"):
+        local_lines.append(f"- First Nations context: {', '.join(ctx['firstNationsContext'])}")
+    if ctx.get("localLandmarks"):
+        local_lines.append(f"- Local landmarks & geography: {', '.join(ctx['localLandmarks'])}")
+    if ctx.get("localSportsTeams"):
+        local_lines.append(f"- Local sports teams: {', '.join(ctx['localSportsTeams'])}")
+    if ctx.get("localArtistsMusic"):
+        local_lines.append(f"- Local artists & music: {', '.join(ctx['localArtistsMusic'])}")
+    if ctx.get("communityProjects"):
+        local_lines.append(f"- Community projects: {', '.join(ctx['communityProjects'])}")
+    if ctx.get("culturalFigures"):
+        local_lines.append(f"- Cultural figures & role models: {', '.join(ctx['culturalFigures'])}")
+    if ctx.get("studentInterests"):
+        local_lines.append(f"- Student interests: {', '.join(ctx['studentInterests'])}")
+    if ctx.get("languageBackgrounds"):
+        local_lines.append(f"- Language backgrounds in class: {', '.join(ctx['languageBackgrounds'])}")
+    if ctx.get("localDataSources"):
+        local_lines.append(f"- Local data sources: {', '.join(ctx['localDataSources'])}")
+
+    localisation_block = ""
+    if local_lines:
+        localisation_block = f"""
+
+CLASSROOM LOCALISATION CONTEXT:
+{chr(10).join(local_lines)}
+
+Use this local context to:
+- Prefer resources relevant to this specific location and community
+- Suggest connections to local landmarks, people, and projects when synthesising
+- Frame examples using the student interests and cultural references listed above
+- Acknowledge the First Nations context when relevant"""
+
     base_context = f"""You are part of EduLens, an AI-powered educational resource discovery platform built for the Australian and New Zealand curriculum.
 
 USER CONTEXT:
@@ -79,6 +116,7 @@ USER CONTEXT:
 - Grade requirements: {grade_desc}
 {f"- Subject: {state.subject}" if state.subject else ""}
 - Search query: "{state.query}"
+{localisation_block}
 
 IMPORTANT RULES:
 - All responses MUST be age-appropriate for the specified grade level
@@ -157,6 +195,7 @@ class PipelineState:
     grade_level: str = "middle"  # Teaching To selection
     subject: Optional[str] = None
     user_role: str = "teacher"
+    classroom_context: dict = field(default_factory=dict)  # Localised content embedding
 
     # Phase 1: Search results
     expanded_queries: list[str] = field(default_factory=list)
@@ -538,6 +577,7 @@ async def run_pipeline(
     grade_level: str = "middle",
     subject: str | None = None,
     user_role: str = "teacher",
+    classroom_context: dict | None = None,
 ) -> dict:
     """
     Execute the full 3-phase pipeline.
@@ -562,6 +602,7 @@ async def run_pipeline(
         grade_level=grade_level,
         subject=subject,
         user_role=user_role,
+        classroom_context=classroom_context or {},
     )
 
     # ── Phase 1: Search ──

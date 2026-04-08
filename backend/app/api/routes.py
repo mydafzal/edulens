@@ -32,6 +32,7 @@ class PipelineSearchRequest(BaseModel):
     grade_level: str = Field(..., description="Teaching To selection: early-years, primary, middle, senior, tertiary")
     subject: Optional[str] = Field(None, description="Optional subject filter")
     user_role: str = Field("teacher", description="User role for personalization")
+    classroom_context: Optional[dict] = Field(None, description="Localised classroom context (location, First Nations, landmarks, interests, etc.)")
 
     class Config:
         json_schema_extra = {
@@ -40,6 +41,14 @@ class PipelineSearchRequest(BaseModel):
                 "grade_level": "middle",
                 "subject": "Geography",
                 "user_role": "teacher",
+                "classroom_context": {
+                    "town": "Mildura",
+                    "state": "Victoria",
+                    "schoolName": "Mildura Senior College",
+                    "firstNationsContext": ["Latji Latji Country"],
+                    "localLandmarks": ["Murray River", "Hattah-Kulkyne National Park"],
+                    "studentInterests": ["AFL", "TikTok", "Gaming"],
+                },
             }
         }
 
@@ -137,6 +146,7 @@ async def search_pipeline(request: PipelineSearchRequest):
         grade_level=request.grade_level,
         subject=request.subject,
         user_role=request.user_role,
+        classroom_context=request.classroom_context,
     )
 
     return PipelineSearchResponse(**result)

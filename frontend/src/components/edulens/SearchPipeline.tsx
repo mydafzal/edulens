@@ -32,6 +32,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { getMockSearchResult } from '@/data/mockData';
 import type { SearchStage, SearchPipelineResult, RAGSource, UserRole, ToolCard } from '@/types/edulens';
+import type { ClassroomContextData } from './ClassroomContext';
 import { getToolsForRole } from '@/data/mockData';
 
 // Grade level labels for display
@@ -50,6 +51,7 @@ interface SearchPipelineProps {
   onNewSearch: (q: string) => void;
   userRole: UserRole;
   teachingTo?: string;
+  classroomContext?: ClassroomContextData;
 }
 
 const stageConfig: { id: SearchStage; label: string; icon: typeof Search; description: string; detail: string }[] = [
@@ -83,7 +85,7 @@ const stageConfig: { id: SearchStage; label: string; icon: typeof Search; descri
   },
 ];
 
-export function SearchPipeline({ query, onBack, onNewSearch, userRole, teachingTo = 'all' }: SearchPipelineProps) {
+export function SearchPipeline({ query, onBack, onNewSearch, userRole, teachingTo = 'all', classroomContext }: SearchPipelineProps) {
   const [currentStage, setCurrentStage] = useState<SearchStage>('searching');
   const [result, setResult] = useState<SearchPipelineResult | null>(null);
   const [newQuery, setNewQuery] = useState('');
@@ -181,6 +183,9 @@ export function SearchPipeline({ query, onBack, onNewSearch, userRole, teachingT
             {isComplete ? `Completed in ${result.totalTime}s` : 'Searching...'}
             {teachingTo && teachingTo !== 'all' && (
               <span className="ml-1">· Filtered for age-appropriate content</span>
+            )}
+            {classroomContext?.town && (
+              <span className="ml-1">· Localised for {classroomContext.town}{classroomContext.state ? `, ${classroomContext.state}` : ''}</span>
             )}
           </p>
         </div>

@@ -8,3 +8,4 @@ export { LandingPage } from './LandingPage';
 export { RoleSelection } from './RoleSelection';
 export { Dashboard } from './Dashboard';
 export { SearchPipeline } from './SearchPipeline';
+export { ClassroomContext } from './ClassroomContext';
