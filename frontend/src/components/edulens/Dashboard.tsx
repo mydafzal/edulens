@@ -84,6 +84,7 @@ export function Dashboard() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [teachingTo, setTeachingTo] = useState<GradeLevel | null>(null);
   const [classroomContext, setClassroomContext] = useState<ClassroomContextData>(loadClassroomContext);
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const tools = user?.role ? getToolsForRole(user.role) : [];
@@ -339,6 +340,7 @@ export function Dashboard() {
                 userRole={user?.role || 'teacher'}
                 teachingTo={teachingTo || 'all'}
                 classroomContext={classroomContext}
+                webSearchEnabled={webSearchEnabled}
               />
             ) : (
               <HomeView
@@ -355,6 +357,8 @@ export function Dashboard() {
                 gradeLevels={GRADE_LEVELS}
                 classroomContext={classroomContext}
                 setClassroomContext={setClassroomContext}
+                webSearchEnabled={webSearchEnabled}
+                setWebSearchEnabled={setWebSearchEnabled}
               />
             )}
           </AnimatePresence>
@@ -431,6 +435,8 @@ function HomeView({
   gradeLevels,
   classroomContext,
   setClassroomContext,
+  webSearchEnabled,
+  setWebSearchEnabled,
 }: {
   tools: ToolCard[];
   onSearch: (q: string) => void;
@@ -444,6 +450,8 @@ function HomeView({
   gradeLevels: readonly { id: string; label: string; ages: string }[];
   classroomContext: ClassroomContextData;
   setClassroomContext: (ctx: ClassroomContextData) => void;
+  webSearchEnabled: boolean;
+  setWebSearchEnabled: (v: boolean) => void;
 }) {
   const suggestions = [
     'Water scarcity Year 9 Geography Queensland',
@@ -517,6 +525,42 @@ function HomeView({
             <Button type="submit" disabled={!searchQuery.trim() || !teachingTo} className="flex-shrink-0 h-10 px-5 ml-2 rounded-full gap-2">
               <Send className="w-4 h-4" /> Search
             </Button>
+          </div>
+
+          {/* Web Search Toggle */}
+          <div className="flex items-center justify-end mt-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+              className={cn(
+                'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-200 border',
+                webSearchEnabled
+                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                  : 'bg-white text-slate-400 border-slate-200 hover:text-slate-600 hover:border-slate-300'
+              )}
+            >
+              {webSearchEnabled ? (
+                <ToggleRight className="w-3.5 h-3.5 text-amber-500" />
+              ) : (
+                <ToggleLeft className="w-3.5 h-3.5" />
+              )}
+              <Globe className="w-3 h-3" />
+              Web Search
+              {webSearchEnabled && (
+                <span className="text-[9px] font-bold uppercase px-1 py-0.5 rounded bg-amber-200 text-amber-800 leading-none">
+                  ON
+                </span>
+              )}
+            </button>
+            {webSearchEnabled && (
+              <motion.span
+                initial={{ opacity: 0, x: -5 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="text-[10px] text-amber-600"
+              >
+                Extended sources enabled — results tagged as Bronze tier
+              </motion.span>
+            )}
           </div>
         </motion.form>
 
