@@ -141,14 +141,15 @@ export interface ToolCard {
   comingSoon?: boolean;
 }
 
-// Search pipeline stages
+// Search pipeline — 3-phase design
+// Phase 1: SEARCH (Query + HyDE → Hybrid Search → ColBERT Rerank → Trust Tier)
+// Phase 2: EVALUATE (Dual-Agent parallel: Bad Cop removes, Good Cop validates → Consensus → retry if < 7)
+// Phase 3: SYNTHESIZE (Generate summary from filtered sources + APA citations)
 export type SearchStage =
   | 'idle'
-  | 'query-expansion'
-  | 'rag-retrieval'
-  | 'source-verification'
-  | 'dual-agent-review'
-  | 'scoring'
+  | 'searching'
+  | 'evaluating'
+  | 'synthesizing'
   | 'complete';
 
 export interface DualAgentReview {

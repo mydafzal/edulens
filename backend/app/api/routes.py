@@ -1,478 +1,302 @@
 """
 EduLens API Routes
+
+Main endpoints:
+    POST /search      → Full 3-phase pipeline (Search → Evaluate → Synthesize)
+    POST /evaluate     → Standalone resource evaluation
+    POST /localize     → Adapt resources for local context
+    GET  /resources/:id → Get a specific resource
+    GET  /health       → Health check
 """
 
 import time
 import uuid
 from typing import List, Optional
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse
 
-from app.models.schemas import (
-    SearchRequest,
-    SearchResponse,
-    LocalizeRequest,
-    LocalizeResponse,
-    EvaluateRequest,
-    EvaluateResponse,
-    Resource,
-    ResourceSource,
-    QualityScorecard,
-    QualityDimension,
-    QualityLevel,
-    ResourceType,
-    LicenseType,
-    Adaptation,
-    AdaptationType,
-    LocalContext,
-    ScopeLevel,
-)
+from app.services.pipeline import run_pipeline
+from app.core.config import settings
 
 router = APIRouter()
 
 
-# Sample data for demo purposes
-SAMPLE_RESOURCES = [
-    Resource(
-        id="1",
-        title="Water Scarcity in the Murray-Darling Basin",
-        description="Comprehensive overview of water management challenges in Australia's most important river system, including historical context, current policies, and future projections.",
-        type=ResourceType.article,
-        thumbnail="https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&h=400&fit=crop",
-        source=ResourceSource(
-            name="ABC Education",
-            url="https://education.abc.net.au",
-            author="Dr. Sarah Mitchell",
-            publishDate="2024-08-15",
-            license="CC BY-NC",
-            licenseType=LicenseType.cc_by_nc,
-        ),
-        scorecard=QualityScorecard(
-            accuracy=QualityDimension(
-                name="accuracy",
-                label="Accuracy",
-                level=QualityLevel.safe,
-                score=92,
-                rationale="Information verified against Bureau of Meteorology data and peer-reviewed sources.",
-            ),
-            bias=QualityDimension(
-                name="bias",
-                label="Bias",
-                level=QualityLevel.safe,
-                score=88,
-                rationale="Presents multiple stakeholder perspectives including farmers, environmentalists, and Indigenous communities.",
-            ),
-            ageAppropriateness=QualityDimension(
-                name="ageAppropriateness",
-                label="Age Appropriate",
-                level=QualityLevel.safe,
-                score=95,
-                rationale="Language and concepts suitable for Years 9-10. Complex terms are explained.",
-            ),
-            culturalSensitivity=QualityDimension(
-                name="culturalSensitivity",
-                label="Cultural Sensitivity",
-                level=QualityLevel.safe,
-                score=85,
-                rationale="Includes First Nations water rights perspectives with appropriate cultural framing.",
-            ),
-            safety=QualityDimension(
-                name="safety",
-                label="Safety",
-                level=QualityLevel.safe,
-                score=100,
-                rationale="No safety concerns identified.",
-            ),
-            overallScore=92,
-        ),
-        curriculumAlignment=["ACHGK051", "ACHGK052"],
-        yearLevels=[9, 10],
-        subjects=["Geography", "Science"],
-        tags=["Water", "Environment", "Murray-Darling", "Sustainability"],
-    ),
-    Resource(
-        id="2",
-        title="Climate Data Visualization Tool",
-        description="Interactive tool allowing students to explore climate data trends across Australian regions. Includes temperature, rainfall, and extreme weather event data.",
-        type=ResourceType.interactive,
-        thumbnail="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop",
-        source=ResourceSource(
-            name="Bureau of Meteorology",
-            url="http://www.bom.gov.au/climate/data/",
-            publishDate="2024-06-01",
-            license="CC BY",
-            licenseType=LicenseType.cc_by,
-        ),
-        scorecard=QualityScorecard(
-            accuracy=QualityDimension(
-                name="accuracy",
-                label="Accuracy",
-                level=QualityLevel.safe,
-                score=98,
-                rationale="Official government data source, regularly updated and verified.",
-            ),
-            bias=QualityDimension(
-                name="bias",
-                label="Bias",
-                level=QualityLevel.safe,
-                score=95,
-                rationale="Presents raw data without editorial interpretation.",
-            ),
-            ageAppropriateness=QualityDimension(
-                name="ageAppropriateness",
-                label="Age Appropriate",
-                level=QualityLevel.caution,
-                score=72,
-                rationale="Interface may require teacher guidance for younger students. Data literacy skills needed.",
-            ),
-            culturalSensitivity=QualityDimension(
-                name="culturalSensitivity",
-                label="Cultural Sensitivity",
-                level=QualityLevel.safe,
-                score=90,
-                rationale="Neutral data presentation. Could benefit from Indigenous weather knowledge integration.",
-            ),
-            safety=QualityDimension(
-                name="safety",
-                label="Safety",
-                level=QualityLevel.safe,
-                score=100,
-                rationale="No safety concerns.",
-            ),
-            overallScore=91,
-        ),
-        yearLevels=[9, 10, 11, 12],
-        subjects=["Science", "Geography", "Mathematics"],
-        tags=["Climate", "Data", "Interactive", "Statistics"],
-    ),
-    Resource(
-        id="3",
-        title="First Nations Water Stories: The Murray River",
-        description="Documentary exploring the cultural significance of the Murray River to the Ngarrindjeri, Yorta Yorta, and other First Nations peoples. Includes Dreaming stories and contemporary voices.",
-        type=ResourceType.video,
-        thumbnail="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=400&fit=crop",
-        source=ResourceSource(
-            name="AIATSIS",
-            url="https://aiatsis.gov.au",
-            author="Ngarrindjeri Elders Council",
-            publishDate="2023-11-20",
-            license="Educational Use",
-            licenseType=LicenseType.copyrighted,
-        ),
-        scorecard=QualityScorecard(
-            accuracy=QualityDimension(
-                name="accuracy",
-                label="Accuracy",
-                level=QualityLevel.safe,
-                score=95,
-                rationale="Content developed in partnership with Traditional Owners and verified by AIATSIS.",
-            ),
-            bias=QualityDimension(
-                name="bias",
-                label="Bias",
-                level=QualityLevel.safe,
-                score=90,
-                rationale="Centres First Nations perspectives as intended. Balanced historical context provided.",
-            ),
-            ageAppropriateness=QualityDimension(
-                name="ageAppropriateness",
-                label="Age Appropriate",
-                level=QualityLevel.safe,
-                score=88,
-                rationale="Suitable for Years 7+. Some content about colonisation impact requires sensitive handling.",
-            ),
-            culturalSensitivity=QualityDimension(
-                name="culturalSensitivity",
-                label="Cultural Sensitivity",
-                level=QualityLevel.safe,
-                score=98,
-                rationale="Exemplary cultural protocols observed. Community-led production with proper permissions.",
-            ),
-            safety=QualityDimension(
-                name="safety",
-                label="Safety",
-                level=QualityLevel.safe,
-                score=100,
-                rationale="No safety concerns.",
-            ),
-            overallScore=94,
-        ),
-        yearLevels=[7, 8, 9, 10],
-        subjects=["Geography", "History", "Aboriginal Studies"],
-        tags=["First Nations", "Water", "Culture", "Murray River", "Documentary"],
-    ),
-    Resource(
-        id="4",
-        title="Sustainable Agriculture in Regional Australia",
-        description="Case study examining sustainable farming practices in drought-prone regions, featuring interviews with farmers adapting to changing water availability.",
-        type=ResourceType.pdf,
-        source=ResourceSource(
-            name="CSIRO",
-            url="https://csiro.au",
-            author="Agricultural Research Division",
-            publishDate="2024-03-10",
-            license="CC BY-SA",
-            licenseType=LicenseType.cc_by_sa,
-        ),
-        scorecard=QualityScorecard(
-            accuracy=QualityDimension(
-                name="accuracy",
-                label="Accuracy",
-                level=QualityLevel.safe,
-                score=96,
-                rationale="Peer-reviewed research from Australia's leading science agency.",
-            ),
-            bias=QualityDimension(
-                name="bias",
-                label="Bias",
-                level=QualityLevel.caution,
-                score=78,
-                rationale="Focuses on successful adaptations - may underrepresent challenges faced by smaller farms.",
-            ),
-            ageAppropriateness=QualityDimension(
-                name="ageAppropriateness",
-                label="Age Appropriate",
-                level=QualityLevel.safe,
-                score=82,
-                rationale="Written for general audience. Some technical terms may need explanation for Year 9.",
-            ),
-            culturalSensitivity=QualityDimension(
-                name="culturalSensitivity",
-                label="Cultural Sensitivity",
-                level=QualityLevel.caution,
-                score=70,
-                rationale="Limited representation of Indigenous land management practices. Opportunity to supplement.",
-            ),
-            safety=QualityDimension(
-                name="safety",
-                label="Safety",
-                level=QualityLevel.safe,
-                score=100,
-                rationale="No safety concerns.",
-            ),
-            overallScore=85,
-        ),
-        yearLevels=[9, 10, 11],
-        subjects=["Geography", "Agriculture", "Science"],
-        tags=["Agriculture", "Sustainability", "Drought", "Farming", "Regional"],
-    ),
-]
+# ════════════════════════════════════════════
+# Request / Response Models
+# ════════════════════════════════════════════
+
+class PipelineSearchRequest(BaseModel):
+    """Request for the 3-phase search pipeline."""
+    query: str = Field(..., min_length=1, max_length=500, description="Search query")
+    grade_level: str = Field(..., description="Teaching To selection: early-years, primary, middle, senior, tertiary")
+    subject: Optional[str] = Field(None, description="Optional subject filter")
+    user_role: str = Field("teacher", description="User role for personalization")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "query": "Water scarcity Year 9 Geography Queensland",
+                "grade_level": "middle",
+                "subject": "Geography",
+                "user_role": "teacher",
+            }
+        }
 
 
-@router.post("/search", response_model=SearchResponse)
-async def search_resources(request: SearchRequest):
+class RAGSourceResponse(BaseModel):
+    id: str
+    title: str
+    url: str
+    snippet: str
+    trust_tier: str  # gold, silver, bronze
+    relevance_score: float
+    provider: str
+
+
+class DualAgentCopResponse(BaseModel):
+    verdict: str
+    rating: float
+    summary: str
+
+
+class GoodCopResponse(DualAgentCopResponse):
+    positive_points: List[str] = []
+
+
+class BadCopResponse(DualAgentCopResponse):
+    concerns: List[str] = []
+
+
+class DualAgentReviewResponse(BaseModel):
+    good_cop: GoodCopResponse
+    bad_cop: BadCopResponse
+    consensus_score: float
+
+
+class ReferenceResponse(BaseModel):
+    index: Optional[int] = None
+    title: str = ""
+    authors: List[str] = []
+    url: str = ""
+    publish_date: str = ""
+    source: str = ""
+    citation_apa: str = ""
+
+
+class RemovedSourceResponse(BaseModel):
+    id: str
+    title: str
+    reason: str
+
+
+class PipelineSearchResponse(BaseModel):
+    """Full response from the 3-phase pipeline."""
+    query: str
+    expanded_queries: List[str] = []
+    stage: str
+    grade_level: str
+    subject: Optional[str] = None
+    rag_sources: List[RAGSourceResponse] = []
+    dual_agent_review: DualAgentReviewResponse
+    summary: str
+    references: List[ReferenceResponse] = []
+    removed_sources: List[RemovedSourceResponse] = []
+    total_time: float
+    retry_count: int = 0
+    error: Optional[str] = None
+
+
+# ════════════════════════════════════════════
+# MAIN ENDPOINT: 3-Phase Pipeline Search
+# ════════════════════════════════════════════
+
+@router.post("/search", response_model=PipelineSearchResponse)
+async def search_pipeline(request: PipelineSearchRequest):
     """
-    Search for educational resources based on query and filters.
+    Execute the full 3-phase search pipeline.
+
+    Phase 1 — SEARCH:
+        1 CurricuLLM call (query expansion + HyDE)
+        + ERIC API retrieval (no LLM)
+        + Rule-based trust-tier tagging (no LLM)
+
+    Phase 2 — EVALUATE:
+        2 CurricuLLM calls IN PARALLEL (Bad Cop + Good Cop)
+        + Server-side consensus scoring (no LLM)
+        + Conditional retry if consensus < threshold
+
+    Phase 3 — SYNTHESIZE:
+        1 CurricuLLM call (citation-grounded summary)
+
+    Total: 4 CurricuLLM API calls (2 run in parallel)
+    Expected latency: 3-5 seconds
     """
+    result = await run_pipeline(
+        query=request.query,
+        grade_level=request.grade_level,
+        subject=request.subject,
+        user_role=request.user_role,
+    )
+
+    return PipelineSearchResponse(**result)
+
+
+# ════════════════════════════════════════════
+# STANDALONE EVALUATE ENDPOINT
+# ════════════════════════════════════════════
+
+class EvaluateURLRequest(BaseModel):
+    """Evaluate a single URL for educational quality."""
+    url: str
+    grade_level: str = "middle"
+    subject: Optional[str] = None
+
+
+class EvaluateURLResponse(BaseModel):
+    url: str
+    trust_tier: str
+    evaluation: dict
+    evaluation_time: float
+
+
+@router.post("/evaluate")
+async def evaluate_url(request: EvaluateURLRequest):
+    """
+    Evaluate a single URL for educational quality.
+    Uses 1 CurricuLLM call for content assessment + rule-based trust tier.
+    """
+    from app.services.trust import classify_trust_tier
+    from app.services import curricullm
+
     start_time = time.time()
 
-    # Simple keyword filtering for demo
-    query_lower = request.query.lower()
-    results = []
+    trust_tier = classify_trust_tier(url=request.url)
 
-    for resource in SAMPLE_RESOURCES:
-        # Check if query matches title, description, or tags
-        matches = (
-            query_lower in resource.title.lower()
-            or query_lower in resource.description.lower()
-            or (resource.tags and any(query_lower in tag.lower() for tag in resource.tags))
+    try:
+        evaluation = await curricullm.chat_json(
+            messages=[
+                {"role": "system", "content": "You are an educational content quality assessor. Evaluate the given URL for classroom use. Respond in JSON."},
+                {"role": "user", "content": f"""Evaluate this educational resource URL: {request.url}
+Target audience: {request.grade_level} students
+Subject: {request.subject or "General"}
+
+Assess and respond in JSON:
+{{
+    "accuracy": {{"score": <0-100>, "rationale": "..."}},
+    "bias": {{"score": <0-100>, "rationale": "..."}},
+    "age_appropriateness": {{"score": <0-100>, "rationale": "..."}},
+    "cultural_sensitivity": {{"score": <0-100>, "rationale": "..."}},
+    "safety": {{"score": <0-100>, "rationale": "..."}},
+    "overall_score": <0-100>,
+    "recommendation": "approve" or "caution" or "reject",
+    "summary": "2-3 sentence evaluation summary"
+}}"""},
+            ],
+            stage=request.grade_level,
+            subject=request.subject,
+            temperature=0.2,
+        )
+    except Exception as e:
+        evaluation = {"error": str(e), "overall_score": 0, "recommendation": "caution"}
+
+    return EvaluateURLResponse(
+        url=request.url,
+        trust_tier=trust_tier,
+        evaluation=evaluation,
+        evaluation_time=round(time.time() - start_time, 2),
+    )
+
+
+# ════════════════════════════════════════════
+# TOOL EXECUTION ENDPOINT
+# ════════════════════════════════════════════
+
+class ToolExecuteRequest(BaseModel):
+    """Execute a tool (Lesson Plan Generator, etc.) using search results."""
+    tool_id: str
+    tool_name: str
+    input_text: str  # The raw search results / sources
+    grade_level: str = "middle"
+    subject: Optional[str] = None
+    custom_instructions: Optional[str] = None
+
+
+@router.post("/tools/execute")
+async def execute_tool(request: ToolExecuteRequest):
+    """
+    Execute a tool using CurricuLLM.
+    Takes search results and transforms them via the selected tool.
+
+    Examples: Lesson Plan Generator, Worksheet Generator, Quiz Builder, etc.
+
+    Uses 1 CurricuLLM call with curriculum context.
+    """
+    from app.services import curricullm
+
+    tool_prompts = {
+        "lesson-plan": "Create a detailed, standards-aligned lesson plan from these resources. Include objectives, activities, assessment, and differentiation strategies.",
+        "worksheet": "Create an educational worksheet with varied question types (multiple choice, short answer, extended response) based on these resources.",
+        "quiz": "Create a formative assessment quiz with 10 questions at varied difficulty levels based on these resources.",
+        "text-rewriter": "Rewrite and simplify this content for the target grade level while maintaining accuracy.",
+        "rubric": "Create a detailed assessment rubric with clear criteria and performance levels.",
+        "writing-feedback": "Provide constructive, actionable feedback on this student writing.",
+        "presentation": "Create a slide deck outline (10-12 slides) with key points, discussion questions, and visual suggestions.",
+        "text-summarizer": "Summarize this content concisely while preserving key educational concepts.",
+    }
+
+    system_prompt = tool_prompts.get(
+        request.tool_id,
+        request.custom_instructions or "Process this educational content according to the user's request."
+    )
+
+    user_content = f"""Tool: {request.tool_name}
+Grade Level: {request.grade_level}
+Subject: {request.subject or "General"}
+
+Input Content:
+{request.input_text}
+
+{f"Additional Instructions: {request.custom_instructions}" if request.custom_instructions else ""}"""
+
+    try:
+        response = await curricullm.chat(
+            messages=[
+                {"role": "system", "content": f"You are an expert educational tool. {system_prompt}"},
+                {"role": "user", "content": user_content},
+            ],
+            stage=request.grade_level,
+            subject=request.subject,
+            temperature=0.4,
+            max_tokens=3000,
         )
 
-        if matches or not request.query.strip():
-            # Apply filters if provided
-            if request.filters:
-                if request.filters.year_levels:
-                    if not resource.yearLevels or not any(
-                        y in request.filters.year_levels for y in resource.yearLevels
-                    ):
-                        continue
-                if request.filters.subjects:
-                    if not resource.subjects or not any(
-                        s in request.filters.subjects for s in resource.subjects
-                    ):
-                        continue
-                if request.filters.content_types:
-                    if resource.type not in request.filters.content_types:
-                        continue
-                if request.filters.min_quality_score:
-                    if resource.scorecard.overall_score < request.filters.min_quality_score:
-                        continue
-            results.append(resource)
-
-    # If no results found, return all resources (for demo)
-    if not results:
-        results = SAMPLE_RESOURCES
-
-    query_time = time.time() - start_time
-
-    return SearchResponse(
-        resources=results,
-        totalCount=len(results),
-        queryTime=query_time,
-        suggestions=[
-            "Water scarcity Year 9 Geography Queensland",
-            "First Nations perspectives colonisation",
-            "Climate change data visualization",
-        ],
-    )
+        return {
+            "tool_id": request.tool_id,
+            "tool_name": request.tool_name,
+            "output": response.choices[0].message.content,
+            "model": response.model,
+            "usage": {
+                "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
+                "completion_tokens": response.usage.completion_tokens if response.usage else 0,
+                "total_tokens": response.usage.total_tokens if response.usage else 0,
+            },
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Tool execution failed: {str(e)}")
 
 
-@router.post("/localize", response_model=LocalizeResponse)
-async def localize_resource(request: LocalizeRequest):
-    """
-    Generate localized adaptations for a resource based on local context.
-    """
-    # Find the resource
-    resource = None
-    for r in SAMPLE_RESOURCES:
-        if r.id == request.resource_id:
-            resource = r
-            break
-
-    if not resource:
-        raise HTTPException(status_code=404, detail="Resource not found")
-
-    # Generate sample adaptations based on context
-    adaptations = generate_sample_adaptations(resource, request.local_context)
-
-    return LocalizeResponse(
-        resource=resource,
-        adaptations=adaptations,
-        localContext=request.local_context,
-    )
-
-
-def generate_sample_adaptations(resource: Resource, context: LocalContext) -> List[Adaptation]:
-    """Generate sample adaptations based on the resource and local context."""
-    adaptations = []
-
-    location_name = context.suburb or context.region or context.state or context.country
-
-    # Example adaptation
-    adaptations.append(
-        Adaptation(
-            type=AdaptationType.example,
-            original="Consider a major river system in your country...",
-            adapted=f"The local waterways near {location_name} face similar challenges...",
-            rationale=f"Replaced generic example with local {location_name} reference",
-        )
-    )
-
-    # Reference adaptation
-    if context.state:
-        adaptations.append(
-            Adaptation(
-                type=AdaptationType.reference,
-                original="Local farmers have adapted to water scarcity...",
-                adapted=f"Farmers in {context.state} have pioneered innovative water management systems...",
-                rationale=f"Added specific regional reference relevant to {context.state}",
-            )
-        )
-
-    # Cultural adaptation
-    adaptations.append(
-        Adaptation(
-            type=AdaptationType.cultural,
-            original="Indigenous communities have traditional water management practices...",
-            adapted=f"The Traditional Owners of the {location_name} region have practiced sustainable water management for thousands of years...",
-            rationale="Incorporated specific local First Nations context per AIATSIS guidelines",
-        )
-    )
-
-    # Reading level adaptation
-    if context.year_level and context.year_level <= 9:
-        adaptations.append(
-            Adaptation(
-                type=AdaptationType.reading_level,
-                original="The anthropogenic factors contributing to hydrological stress...",
-                adapted="Human activities that put pressure on water supplies...",
-                rationale=f"Simplified academic language for Year {context.year_level} reading level",
-            )
-        )
-
-    return adaptations
-
-
-@router.post("/evaluate", response_model=EvaluateResponse)
-async def evaluate_resource(request: EvaluateRequest):
-    """
-    Evaluate a URL and generate a quality scorecard.
-    """
-    start_time = time.time()
-
-    # For demo, return a sample evaluation
-    resource = Resource(
-        id=str(uuid.uuid4()),
-        title="Evaluated Resource",
-        description="This resource was evaluated using EduLens AI quality analysis.",
-        type=ResourceType.website,
-        source=ResourceSource(
-            name="External Source",
-            url=request.url,
-            licenseType=LicenseType.unknown,
-        ),
-        scorecard=QualityScorecard(
-            accuracy=QualityDimension(
-                name="accuracy",
-                label="Accuracy",
-                level=QualityLevel.caution,
-                score=75,
-                rationale="Content requires verification against primary sources.",
-            ),
-            bias=QualityDimension(
-                name="bias",
-                label="Bias",
-                level=QualityLevel.safe,
-                score=80,
-                rationale="Multiple perspectives represented.",
-            ),
-            ageAppropriateness=QualityDimension(
-                name="ageAppropriateness",
-                label="Age Appropriate",
-                level=QualityLevel.safe,
-                score=85,
-                rationale=f"Suitable for Year {request.year_level or 'unspecified'} students.",
-            ),
-            culturalSensitivity=QualityDimension(
-                name="culturalSensitivity",
-                label="Cultural Sensitivity",
-                level=QualityLevel.caution,
-                score=70,
-                rationale="Could benefit from additional cultural perspectives.",
-            ),
-            safety=QualityDimension(
-                name="safety",
-                label="Safety",
-                level=QualityLevel.safe,
-                score=95,
-                rationale="No significant safety concerns identified.",
-            ),
-            overallScore=81,
-        ),
-        yearLevels=[request.year_level] if request.year_level else None,
-        subjects=[request.subject] if request.subject else None,
-    )
-
-    evaluation_time = time.time() - start_time
-
-    return EvaluateResponse(
-        resource=resource,
-        evaluationTime=evaluation_time,
-    )
-
-
-@router.get("/resources/{resource_id}", response_model=Resource)
-async def get_resource(resource_id: str):
-    """
-    Get a specific resource by ID.
-    """
-    for resource in SAMPLE_RESOURCES:
-        if resource.id == resource_id:
-            return resource
-
-    raise HTTPException(status_code=404, detail="Resource not found")
-
+# ════════════════════════════════════════════
+# UTILITY ENDPOINTS
+# ════════════════════════════════════════════
 
 @router.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "service": "EduLens API"}
+    return {
+        "status": "healthy",
+        "service": "EduLens API",
+        "pipeline": "3-phase (Search → Evaluate → Synthesize)",
+        "llm_provider": "CurricuLLM",
+        "model": settings.curricullm_model,
+    }

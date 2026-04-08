@@ -64,14 +64,13 @@ const toolIconMap: Record<string, typeof FileText> = {
   GraduationCap, PlayCircle, Target, BookOpen,
 };
 
-// Teaching To grade levels
+// Teaching To grade levels — mandatory selection for age-appropriate content
 const GRADE_LEVELS = [
   { id: 'early-years', label: 'Early Years (K–2)', ages: '5–8' },
   { id: 'primary', label: 'Primary (3–6)', ages: '8–12' },
   { id: 'middle', label: 'Middle School (7–9)', ages: '12–15' },
   { id: 'senior', label: 'Senior (10–12)', ages: '15–18' },
   { id: 'tertiary', label: 'Tertiary / Adult', ages: '18+' },
-  { id: 'all', label: 'All Levels', ages: 'Any' },
 ] as const;
 
 export type GradeLevel = typeof GRADE_LEVELS[number]['id'];
@@ -82,7 +81,7 @@ export function Dashboard() {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatHistoryEntry[]>([]);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const [teachingTo, setTeachingTo] = useState<GradeLevel>('all');
+  const [teachingTo, setTeachingTo] = useState<GradeLevel | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const tools = user?.role ? getToolsForRole(user.role) : [];
@@ -336,7 +335,7 @@ export function Dashboard() {
                 onBack={handleBackToHome}
                 onNewSearch={handleSearch}
                 userRole={user?.role || 'teacher'}
-                teachingTo={teachingTo}
+                teachingTo={teachingTo || 'all'}
               />
             ) : (
               <HomeView
@@ -433,7 +432,7 @@ function HomeView({
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   userName: string;
-  teachingTo: GradeLevel;
+  teachingTo: GradeLevel | null;
   setTeachingTo: (g: GradeLevel) => void;
   gradeLevels: readonly { id: string; label: string; ages: string }[];
 }) {
@@ -446,6 +445,7 @@ function HomeView({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!teachingTo) return; // Grade level is mandatory
     onSearch(searchQuery);
   };
 
@@ -505,25 +505,36 @@ function HomeView({
                 <X className="w-4 h-4 text-muted-foreground" />
               </button>
             )}
-            <Button type="submit" disabled={!searchQuery.trim()} className="flex-shrink-0 h-10 px-5 ml-2 rounded-full gap-2">
+            <Button type="submit" disabled={!searchQuery.trim() || !teachingTo} className="flex-shrink-0 h-10 px-5 ml-2 rounded-full gap-2">
               <Send className="w-4 h-4" /> Search
             </Button>
           </div>
         </motion.form>
 
-        {/* Teaching To — Grade Level Selector */}
+        {/* Teaching To — Mandatory Grade Level Selector */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.15 }}
           className="max-w-3xl mx-auto"
         >
-          <div className="flex items-center gap-3 justify-center flex-wrap">
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Users className="w-4 h-4" />
-              <span className="font-medium">Teaching to:</span>
+          <div className={cn(
+            'p-3 rounded-2xl border-2 transition-all duration-300',
+            !teachingTo ? 'border-amber-200 bg-amber-50/50' : 'border-emerald-200 bg-emerald-50/30'
+          )}>
+            <div className="flex items-center gap-2 justify-center mb-2.5">
+              <Users className={cn('w-4 h-4', !teachingTo ? 'text-amber-600' : 'text-emerald-600')} />
+              <span className={cn('text-sm font-semibold', !teachingTo ? 'text-amber-800' : 'text-emerald-800')}>
+                Teaching to:
+              </span>
+              <span className={cn(
+                'text-[10px] font-bold uppercase px-1.5 py-0.5 rounded',
+                !teachingTo ? 'bg-amber-200 text-amber-700' : 'bg-emerald-200 text-emerald-700'
+              )}>
+                {!teachingTo ? 'Required' : 'Selected'}
+              </span>
             </div>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
               {gradeLevels.map(level => (
                 <button
                   key={level.id}
@@ -531,7 +542,7 @@ function HomeView({
                   className={cn(
                     'px-3 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 border',
                     teachingTo === level.id
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm scale-105'
                       : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-700'
                   )}
                 >
@@ -539,16 +550,20 @@ function HomeView({
                 </button>
               ))}
             </div>
+            {!teachingTo ? (
+              <p className="text-xs text-amber-600 text-center mt-2 font-medium">
+                Select a grade level to ensure age-appropriate content delivery
+              </p>
+            ) : (
+              <motion.p
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-xs text-emerald-600 text-center mt-2"
+              >
+                Content will be filtered for ages {gradeLevels.find(g => g.id === teachingTo)?.ages}
+              </motion.p>
+            )}
           </div>
-          {teachingTo !== 'all' && (
-            <motion.p
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-xs text-emerald-600 text-center mt-2"
-            >
-              Results will be filtered for age-appropriate content (ages {gradeLevels.find(g => g.id === teachingTo)?.ages})
-            </motion.p>
-          )}
         </motion.div>
 
         {/* Suggestions */}
@@ -561,8 +576,21 @@ function HomeView({
           {suggestions.map(s => (
             <button
               key={s}
-              onClick={() => { setSearchQuery(s); onSearch(s); }}
-              className="px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-[13px] font-medium hover:bg-emerald-100 transition-colors"
+              onClick={() => {
+                if (!teachingTo) {
+                  // Just fill the query, don't search — they need to pick a grade first
+                  setSearchQuery(s);
+                  return;
+                }
+                setSearchQuery(s);
+                onSearch(s);
+              }}
+              className={cn(
+                'px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-colors',
+                teachingTo
+                  ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+              )}
             >
               {s}
             </button>
@@ -641,11 +669,18 @@ function HomeView({
           <Sparkles className="w-5 h-5 text-emerald-600" />
           <h3 className="text-sm font-semibold">How your search works</h3>
         </div>
-        <div className="flex items-center gap-2 flex-wrap text-xs text-slate-500">
-          {['Query Expansion (HyDE)', 'Hybrid RAG Retrieval', 'Source Verification', 'Dual-Agent Review', 'Quality Scoring', 'Citation Output'].map((step, i) => (
-            <span key={step} className="flex items-center gap-1.5">
-              {i > 0 && <ChevronRight className="w-3 h-3 text-slate-300" />}
-              <span className="px-2 py-1 rounded-md bg-white border border-slate-200 font-medium">{step}</span>
+        <div className="flex items-center gap-3 flex-wrap text-xs text-slate-500">
+          {[
+            { phase: 'Search', detail: 'HyDE + Hybrid RAG + ColBERT Rerank' },
+            { phase: 'Evaluate', detail: 'Dual-Agent Filter + Consensus' },
+            { phase: 'Synthesize', detail: 'Verified Summary + Citations' },
+          ].map((step, i) => (
+            <span key={step.phase} className="flex items-center gap-2">
+              {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-slate-300" />}
+              <span className="flex flex-col px-3 py-1.5 rounded-lg bg-white border border-slate-200">
+                <span className="font-semibold text-slate-700">{step.phase}</span>
+                <span className="text-[10px] text-slate-400">{step.detail}</span>
+              </span>
             </span>
           ))}
         </div>

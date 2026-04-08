@@ -125,53 +125,35 @@ export function LandingPage() {
               How EduLens Search Works
             </h2>
             <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-              A 6-stage AI pipeline ensures every result is authentic, verified, and classroom-ready.
+              A 3-phase AI pipeline — search, evaluate, synthesize — delivers verified results in under 4 seconds.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {[
               {
                 icon: Search,
                 step: '01',
-                title: 'Query Expansion',
-                description: 'Your search is expanded using HyDE (Hypothetical Document Embeddings) to match educational resource vocabulary.',
+                title: 'Search',
+                description: 'Query expansion via HyDE, hybrid BM25 + vector retrieval across 1.5M+ resources, ColBERT reranking, and rule-based trust-tier tagging — all in a single server round-trip.',
                 color: 'bg-blue-50 text-blue-600',
-              },
-              {
-                icon: Zap,
-                step: '02',
-                title: 'Hybrid RAG Retrieval',
-                description: 'BM25 keyword match + dense vector search run in parallel across 1.5M+ verified educational resources.',
-                color: 'bg-emerald-50 text-emerald-600',
+                sub: ['HyDE Expansion', 'Hybrid RAG', 'ColBERT Rerank', 'Trust Tiers'],
               },
               {
                 icon: Shield,
-                step: '03',
-                title: 'Source Verification',
-                description: 'Trust-tier scoring ensures Gold (ERIC, ACARA) sources rank above Silver and Bronze.',
-                color: 'bg-violet-50 text-violet-600',
-              },
-              {
-                icon: Bot,
-                step: '04',
-                title: 'Dual-Agent Review',
-                description: 'CurricuLLM deploys two AI agents — a Good Cop and Bad Cop — to independently verify authenticity.',
+                step: '02',
+                title: 'Evaluate',
+                description: 'Dual-agent authenticity filter: Bad Cop removes weak or unreliable sources, Good Cop validates curriculum alignment. If consensus falls below threshold, the search automatically retries.',
                 color: 'bg-amber-50 text-amber-600',
+                sub: ['Bad Cop Filter', 'Good Cop Validate', 'Consensus Score', 'Auto-Retry'],
               },
               {
-                icon: Eye,
-                step: '05',
-                title: 'Quality Scoring',
-                description: '5-dimension scorecard: accuracy, bias, age appropriateness, cultural sensitivity, and safety.',
-                color: 'bg-rose-50 text-rose-600',
-              },
-              {
-                icon: CheckCircle2,
-                step: '06',
-                title: 'Citation-Grounded Output',
-                description: 'Every summary is grounded in retrieved sources with mandatory citations. Nothing hallucinated.',
-                color: 'bg-teal-50 text-teal-600',
+                icon: Sparkles,
+                step: '03',
+                title: 'Synthesize',
+                description: 'Citation-grounded summary generated only from sources that survived dual-agent review. Every claim is traceable to a verified source with APA citations.',
+                color: 'bg-emerald-50 text-emerald-600',
+                sub: ['Filtered Sources Only', 'APA Citations', 'Streaming Output'],
               },
             ].map((item, i) => (
               <motion.div
@@ -185,9 +167,16 @@ export function LandingPage() {
                 <div className={`w-12 h-12 rounded-xl ${item.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                   <item.icon className="w-6 h-6" />
                 </div>
-                <div className="text-xs font-bold text-slate-300 mb-2">STEP {item.step}</div>
+                <div className="text-xs font-bold text-slate-300 mb-2">PHASE {item.step}</div>
                 <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{item.description}</p>
+                <p className="text-sm text-slate-500 leading-relaxed mb-3">{item.description}</p>
+                {'sub' in item && (item as { sub: string[] }).sub && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {(item as { sub: string[] }).sub.map(s => (
+                      <span key={s} className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-medium text-slate-500">{s}</span>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>

@@ -52,17 +52,39 @@ interface SearchPipelineProps {
   teachingTo?: string;
 }
 
-const stageConfig: { id: SearchStage; label: string; icon: typeof Search; description: string }[] = [
-  { id: 'query-expansion', label: 'Query Expansion', icon: Search, description: 'Expanding with HyDE embeddings...' },
-  { id: 'rag-retrieval', label: 'RAG Retrieval', icon: Zap, description: 'Hybrid BM25 + vector search across 1.5M+ resources...' },
-  { id: 'source-verification', label: 'Source Verification', icon: Shield, description: 'Verifying trust tiers and provenance...' },
-  { id: 'dual-agent-review', label: 'Dual-Agent Review', icon: Bot, description: 'CurricuLLM agents evaluating authenticity...' },
-  { id: 'scoring', label: 'Quality Scoring', icon: Eye, description: 'Generating 5-dimension quality scorecard...' },
-  { id: 'complete', label: 'Complete', icon: CheckCircle2, description: 'Results verified and ready' },
+const stageConfig: { id: SearchStage; label: string; icon: typeof Search; description: string; detail: string }[] = [
+  {
+    id: 'searching',
+    label: 'Search',
+    icon: Search,
+    description: 'Retrieving from 1.5M+ resources...',
+    detail: 'Query expansion (HyDE) → Hybrid BM25 + vector search → ColBERT rerank → Trust-tier tagging',
+  },
+  {
+    id: 'evaluating',
+    label: 'Evaluate',
+    icon: Shield,
+    description: 'Dual-agent authenticity filter running...',
+    detail: 'Bad Cop removes weak sources · Good Cop validates authenticity · Consensus scoring',
+  },
+  {
+    id: 'synthesizing',
+    label: 'Synthesize',
+    icon: Sparkles,
+    description: 'Generating verified summary...',
+    detail: 'Citation-grounded generation from filtered sources · APA references',
+  },
+  {
+    id: 'complete',
+    label: 'Complete',
+    icon: CheckCircle2,
+    description: 'Results verified and ready',
+    detail: 'All sources passed dual-agent review',
+  },
 ];
 
 export function SearchPipeline({ query, onBack, onNewSearch, userRole, teachingTo = 'all' }: SearchPipelineProps) {
-  const [currentStage, setCurrentStage] = useState<SearchStage>('query-expansion');
+  const [currentStage, setCurrentStage] = useState<SearchStage>('searching');
   const [result, setResult] = useState<SearchPipelineResult | null>(null);
   const [newQuery, setNewQuery] = useState('');
   const [showToolPicker, setShowToolPicker] = useState(false);
@@ -71,10 +93,13 @@ export function SearchPipeline({ query, onBack, onNewSearch, userRole, teachingT
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['summary', 'sources', 'dual-review']));
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  // Simulate pipeline stages
+  // Simulate 3-phase pipeline
   useEffect(() => {
-    const stages: SearchStage[] = ['query-expansion', 'rag-retrieval', 'source-verification', 'dual-agent-review', 'scoring', 'complete'];
-    const delays = [600, 800, 600, 900, 500, 0]; // ms per stage
+    // Phase 1: SEARCH — Query+HyDE (1 LLM) → Weaviate hybrid → ColBERT rerank → trust tier (all server-side)
+    // Phase 2: EVALUATE — Bad Cop + Good Cop in parallel (2 LLM) → consensus (server math) → retry if < 7
+    // Phase 3: SYNTHESIZE — Generate from filtered sources (1 LLM, streaming)
+    const stages: SearchStage[] = ['searching', 'evaluating', 'synthesizing', 'complete'];
+    const delays = [1200, 1400, 800, 0]; // realistic: search ~1.5s, eval ~2s parallel, synth streams
     let timeout: ReturnType<typeof setTimeout>;
     let idx = 0;
 
@@ -87,7 +112,6 @@ export function SearchPipeline({ query, onBack, onNewSearch, userRole, teachingT
             advance();
           }, delays[idx]);
         } else {
-          // Complete — set results
           setResult(getMockSearchResult(query));
         }
       }
@@ -121,7 +145,7 @@ export function SearchPipeline({ query, onBack, onNewSearch, userRole, teachingT
   const handleNewSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (newQuery.trim()) {
-      setCurrentStage('query-expansion');
+      setCurrentStage('searching');
       setResult(null);
       setIsSaved(false);
       onNewSearch(newQuery.trim());
@@ -184,54 +208,59 @@ export function SearchPipeline({ query, onBack, onNewSearch, userRole, teachingT
         )}
       </div>
 
-      {/* Pipeline Progress */}
+      {/* Pipeline Progress — 3 Phases */}
       <div className="bg-card rounded-2xl border border-border p-4 sm:p-5">
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3">
           {stageConfig.map((stage, i) => {
             const isPast = i < stageIndex;
             const isCurrent = stage.id === currentStage;
             const Icon = stage.icon;
 
             return (
-              <div key={stage.id} className="flex items-center gap-1.5">
-                {i > 0 && (
-                  <div className={cn(
-                    'w-6 h-px',
-                    isPast || isCurrent ? 'bg-emerald-400' : 'bg-slate-200'
-                  )} />
-                )}
+              <div key={stage.id} className="flex items-center gap-2 sm:gap-3 flex-1 last:flex-none">
                 <div className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all',
-                  isCurrent && !isComplete && 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+                  'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-300',
+                  isCurrent && !isComplete && 'bg-emerald-50 text-emerald-700 ring-2 ring-emerald-200 shadow-sm',
                   isPast && 'bg-emerald-50 text-emerald-600',
-                  isCurrent && isComplete && 'bg-emerald-500 text-white',
-                  !isPast && !isCurrent && 'text-slate-400',
+                  isCurrent && isComplete && 'bg-emerald-500 text-white shadow-md',
+                  !isPast && !isCurrent && 'text-slate-400 bg-slate-50',
                 )}>
                   {isCurrent && !isComplete ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : isPast || (isCurrent && isComplete) ? (
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <CheckCircle2 className="w-4 h-4" />
                   ) : (
-                    <Icon className="w-3.5 h-3.5" />
+                    <Icon className="w-4 h-4" />
                   )}
-                  <span className="hidden sm:inline">{stage.label}</span>
+                  <span>{stage.label}</span>
                 </div>
+                {i < stageConfig.length - 1 && (
+                  <div className={cn(
+                    'hidden sm:block flex-1 h-0.5 rounded-full min-w-[20px]',
+                    isPast || (isCurrent && i < stageConfig.length - 1) ? 'bg-emerald-300' : 'bg-slate-200'
+                  )} />
+                )}
               </div>
             );
           })}
         </div>
 
-        {/* Current stage description */}
-        {!isComplete && (
-          <motion.p
+        {/* Active stage description + detail */}
+        {!isComplete && stageConfig[stageIndex] && (
+          <motion.div
             key={currentStage}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-sm text-muted-foreground mt-3 flex items-center gap-2"
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 space-y-1"
           >
-            <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
-            {stageConfig[stageIndex]?.description}
-          </motion.p>
+            <p className="text-sm text-foreground font-medium flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+              {stageConfig[stageIndex].description}
+            </p>
+            <p className="text-xs text-muted-foreground pl-6">
+              {stageConfig[stageIndex].detail}
+            </p>
+          </motion.div>
         )}
       </div>
 
