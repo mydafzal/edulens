@@ -10,8 +10,6 @@ build/
 dist/
 
 # Environment files
-.env
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
@@ -53,3 +51,6 @@ coverage/
 .claude/
 .tldr/
 .tldrignore
+config.bat
+temp_auto_push.bat
+temp_interactive_push.bat
