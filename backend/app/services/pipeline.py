@@ -137,6 +137,24 @@ Think about:
 - What pedagogical approaches suit this grade level?"""
 
     elif agent_type == "bad_cop":
+        # Build localisation-aware visual safety guidance
+        visual_culture_lines = []
+        ctx = state.classroom_context or {}
+        if ctx.get("firstNationsContext"):
+            visual_culture_lines.append(f"First Nations context: {', '.join(ctx['firstNationsContext'])}. Sacred/ceremonial imagery may require permissions or be restricted from classroom display.")
+        if ctx.get("languageBackgrounds"):
+            visual_culture_lines.append(f"Students from {', '.join(ctx['languageBackgrounds'])} backgrounds — be aware of culturally specific visual taboos or sensitivities.")
+        if ctx.get("town") or ctx.get("state"):
+            location = f"{ctx.get('town', '')}, {ctx.get('state', '')}".strip(', ')
+            visual_culture_lines.append(f"Location: {location} — flag any imagery that misrepresents or stereotypes this region or its communities.")
+
+        visual_culture_block = ""
+        if visual_culture_lines:
+            visual_culture_block = f"""
+
+LOCATION & CULTURE-SPECIFIC VISUAL CONCERNS:
+{chr(10).join('- ' + line for line in visual_culture_lines)}"""
+
         return f"""{base_context}
 
 YOUR ROLE: Bad Cop — Critical Content Safety Reviewer
@@ -146,6 +164,20 @@ You are the SKEPTIC. Your mandate is to PROTECT {state.grade_level} students fro
 - Culturally insensitive or biased perspectives
 - Sources with poor provenance or unknown authorship
 - Content that doesn't align with {state.grade_level} cognitive and emotional development
+
+VISUAL & MEDIA SAFETY (IMPORTANT):
+You cannot see images directly, but you MUST assess the RISK of unsafe visual content based on:
+- Source type: Is this from an ad-supported website, blog, or social media? Ad-supported sites often serve inappropriate display ads alongside educational content. FLAG these.
+- Provider reputation: Government (.gov.au), peer-reviewed journals, and institutional sources (ERIC, CSIRO, AIATSIS) are LOW risk. Unknown blogs, forums, and commercial sites are HIGH risk.
+- Content topic sensitivity: Topics involving war, colonisation, health/anatomy, environmental disasters, or cultural practices may include graphic or distressing imagery. Flag if the source is not from a curated educational provider.
+- URL patterns: Sites with excessive subdomains, tracking parameters, or ad-network patterns are higher risk.
+- Age-specific visual concerns for {state.grade_level}:
+  * Early Years/Primary: No images of violence, death, disaster, or distressing content even in educational context
+  * Middle School: Contextual images okay if educational, but flag graphic/confronting visuals
+  * Senior: More tolerance, but still flag explicit, gratuitously violent, or exploitative imagery
+{visual_culture_block}
+
+When flagging for removal, explicitly note if the concern is VISUAL SAFETY vs TEXT CONTENT so the teacher understands the risk.
 
 You must be STRICT. If a source is borderline, flag it for removal. It is better to remove a questionable source than to expose students to harmful content.
 
@@ -334,6 +366,7 @@ For each source, evaluate against these criteria:
 3. AGE SAFETY: Is every part of this content safe and appropriate for {state.grade_level} students? Consider language, themes, imagery descriptions, and emotional impact.
 4. CULTURAL RESPECT: Does it handle First Nations, multicultural, and diverse perspectives appropriately? Any stereotyping or erasure?
 5. CURRICULUM FIT: Does it align with what a {state.user_role} teaching {state.grade_level} {state.subject or ''} would actually need?
+6. VISUAL SAFETY RISK: Based on the source URL and provider, assess the likelihood of unsafe visual content (inappropriate ads, graphic imagery, culturally insensitive visuals). Rate as LOW (government/institutional), MEDIUM (educational orgs), or HIGH (commercial/blog/unknown). If HIGH, recommend removal.
 
 Respond in JSON:
 {{
@@ -341,6 +374,7 @@ Respond in JSON:
     "verdict": "approve" or "flag" or "reject",
     "sources_to_remove": [<list of source numbers (1-indexed) that MUST be removed>],
     "concerns": ["specific concern 1 with source number referenced", "concern 2", ...],
+    "visual_risk_flags": ["source X: HIGH risk — ad-supported commercial site", ...],
     "summary": "2-3 sentence summary explaining your critical assessment"
 }}"""
 
