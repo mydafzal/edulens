@@ -21,7 +21,7 @@ function Toggle({ active, onToggle }: { active: boolean; onToggle: () => void })
       }}
     >
       <span
-        className="absolute top-0.5 bg-white rounded-full transition-transform"
+        className="absolute top-0.5 left-0 bg-white rounded-full transition-transform"
         style={{
           width: 20, height: 20,
           transform: active ? 'translateX(18px)' : 'translateX(2px)',
@@ -172,7 +172,7 @@ export default function WorkflowsPage() {
                       onClick={wf.onToggle}
                     >
                       <span
-                        className="absolute top-0.5 bg-white rounded-full transition-transform"
+                        className="absolute top-0.5 left-0 bg-white rounded-full transition-transform"
                         style={{
                           width: 20, height: 20,
                           transform: wf.active ? 'translateX(18px)' : 'translateX(2px)',
