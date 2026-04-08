@@ -34,11 +34,22 @@ import { getMockSearchResult } from '@/data/mockData';
 import type { SearchStage, SearchPipelineResult, RAGSource, UserRole, ToolCard } from '@/types/edulens';
 import { getToolsForRole } from '@/data/mockData';
 
+// Grade level labels for display
+const gradeLevelLabels: Record<string, string> = {
+  'early-years': 'Early Years (K–2)',
+  'primary': 'Primary (3–6)',
+  'middle': 'Middle School (7–9)',
+  'senior': 'Senior (10–12)',
+  'tertiary': 'Tertiary / Adult',
+  'all': 'All Levels',
+};
+
 interface SearchPipelineProps {
   query: string;
   onBack: () => void;
   onNewSearch: (q: string) => void;
   userRole: UserRole;
+  teachingTo?: string;
 }
 
 const stageConfig: { id: SearchStage; label: string; icon: typeof Search; description: string }[] = [
@@ -50,7 +61,7 @@ const stageConfig: { id: SearchStage; label: string; icon: typeof Search; descri
   { id: 'complete', label: 'Complete', icon: CheckCircle2, description: 'Results verified and ready' },
 ];
 
-export function SearchPipeline({ query, onBack, onNewSearch, userRole }: SearchPipelineProps) {
+export function SearchPipeline({ query, onBack, onNewSearch, userRole, teachingTo = 'all' }: SearchPipelineProps) {
   const [currentStage, setCurrentStage] = useState<SearchStage>('query-expansion');
   const [result, setResult] = useState<SearchPipelineResult | null>(null);
   const [newQuery, setNewQuery] = useState('');
@@ -134,9 +145,19 @@ export function SearchPipeline({ query, onBack, onNewSearch, userRole }: SearchP
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-semibold truncate">{query}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold truncate">{query}</h2>
+            {teachingTo && teachingTo !== 'all' && (
+              <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold border border-emerald-200">
+                {gradeLevelLabels[teachingTo] || teachingTo}
+              </span>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">
             {isComplete ? `Completed in ${result.totalTime}s` : 'Searching...'}
+            {teachingTo && teachingTo !== 'all' && (
+              <span className="ml-1">· Filtered for age-appropriate content</span>
+            )}
           </p>
         </div>
         {isComplete && (

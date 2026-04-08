@@ -64,12 +64,25 @@ const toolIconMap: Record<string, typeof FileText> = {
   GraduationCap, PlayCircle, Target, BookOpen,
 };
 
+// Teaching To grade levels
+const GRADE_LEVELS = [
+  { id: 'early-years', label: 'Early Years (K–2)', ages: '5–8' },
+  { id: 'primary', label: 'Primary (3–6)', ages: '8–12' },
+  { id: 'middle', label: 'Middle School (7–9)', ages: '12–15' },
+  { id: 'senior', label: 'Senior (10–12)', ages: '15–18' },
+  { id: 'tertiary', label: 'Tertiary / Adult', ages: '18+' },
+  { id: 'all', label: 'All Levels', ages: 'Any' },
+] as const;
+
+export type GradeLevel = typeof GRADE_LEVELS[number]['id'];
+
 export function Dashboard() {
   const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatHistoryEntry[]>([]);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [teachingTo, setTeachingTo] = useState<GradeLevel>('all');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const tools = user?.role ? getToolsForRole(user.role) : [];
@@ -323,6 +336,7 @@ export function Dashboard() {
                 onBack={handleBackToHome}
                 onNewSearch={handleSearch}
                 userRole={user?.role || 'teacher'}
+                teachingTo={teachingTo}
               />
             ) : (
               <HomeView
@@ -334,6 +348,9 @@ export function Dashboard() {
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 userName={user?.name || 'Educator'}
+                teachingTo={teachingTo}
+                setTeachingTo={setTeachingTo}
+                gradeLevels={GRADE_LEVELS}
               />
             )}
           </AnimatePresence>
@@ -405,6 +422,9 @@ function HomeView({
   searchQuery,
   setSearchQuery,
   userName,
+  teachingTo,
+  setTeachingTo,
+  gradeLevels,
 }: {
   tools: ToolCard[];
   onSearch: (q: string) => void;
@@ -413,6 +433,9 @@ function HomeView({
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   userName: string;
+  teachingTo: GradeLevel;
+  setTeachingTo: (g: GradeLevel) => void;
+  gradeLevels: readonly { id: string; label: string; ages: string }[];
 }) {
   const suggestions = [
     'Water scarcity Year 9 Geography Queensland',
@@ -488,6 +511,46 @@ function HomeView({
           </div>
         </motion.form>
 
+        {/* Teaching To — Grade Level Selector */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.15 }}
+          className="max-w-3xl mx-auto"
+        >
+          <div className="flex items-center gap-3 justify-center flex-wrap">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Users className="w-4 h-4" />
+              <span className="font-medium">Teaching to:</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {gradeLevels.map(level => (
+                <button
+                  key={level.id}
+                  onClick={() => setTeachingTo(level.id as GradeLevel)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 border',
+                    teachingTo === level.id
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-700'
+                  )}
+                >
+                  {level.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {teachingTo !== 'all' && (
+            <motion.p
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-xs text-emerald-600 text-center mt-2"
+            >
+              Results will be filtered for age-appropriate content (ages {gradeLevels.find(g => g.id === teachingTo)?.ages})
+            </motion.p>
+          )}
+        </motion.div>
+
         {/* Suggestions */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -516,13 +579,16 @@ function HomeView({
       >
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Your Tools</h2>
-          <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
-            {tools.length} tools for your role
-          </span>
+          <a
+            href="/tools"
+            className="text-xs font-medium text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+          >
+            Explore All Tools <ChevronRight className="w-3.5 h-3.5" />
+          </a>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {tools.map((tool, i) => {
+          {tools.slice(0, 8).map((tool, i) => {
             const Icon = toolIconMap[tool.icon] || FileText;
             return (
               <motion.button
@@ -543,6 +609,24 @@ function HomeView({
               </motion.button>
             );
           })}
+
+          {/* Explore All Tools card */}
+          <motion.a
+            href="/tools"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 + 8 * 0.03 }}
+            className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 hover:border-primary hover:bg-emerald-50/50 transition-all duration-200 text-center group"
+          >
+            <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-colors">
+              <Plus className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-[13px] font-semibold text-slate-500 group-hover:text-emerald-700 transition-colors">
+                Explore All {tools.length}+ Tools
+              </h3>
+            </div>
+          </motion.a>
         </div>
       </motion.div>
 
