@@ -10,6 +10,7 @@ import {
   GraduationCap,
   History,
   ChevronRight,
+  ChevronDown,
   X,
   HardDrive,
   Plug,
@@ -38,6 +39,15 @@ import {
   Plus,
   Bookmark,
   Star,
+  Database,
+  Globe,
+  FolderOpen,
+  ToggleLeft,
+  ToggleRight,
+  Link,
+  Palette,
+  Cloud,
+  Library,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -159,12 +169,79 @@ export function Dashboard() {
         </div>
 
         {/* Nav Items */}
-        <nav className="flex-1 flex flex-col py-3 gap-1 px-2">
+        <nav className="flex-1 flex flex-col py-3 gap-1 px-2 overflow-y-auto overflow-x-hidden">
           <SidebarItem icon={Search} label="Search" active onClick={handleBackToHome} expanded={sidebarExpanded} />
           <SidebarItem icon={BookMarked} label="Library" href="/library" expanded={sidebarExpanded} />
           <SidebarItem icon={Bookmark} label="Saved Searches" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
+
+          {/* Connectors Section */}
+          <AnimatePresence>
+            {sidebarExpanded && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-3 overflow-hidden"
+              >
+                <p className="text-[10px] uppercase tracking-widest text-white/40 px-2 mb-1.5 font-medium">
+                  Connectors
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <SidebarItem icon={HardDrive} label="School Connect Drive" expanded={sidebarExpanded} />
           <SidebarItem icon={Plug} label="MCP Connectors" expanded={sidebarExpanded} />
+          <SidebarItem icon={Cloud} label="Google Drive / OneDrive" expanded={sidebarExpanded} />
+          <SidebarItem icon={Palette} label="Canva Import" expanded={sidebarExpanded} />
+          <SidebarItem icon={Link} label="Custom URL Sources" expanded={sidebarExpanded} />
+
+          {/* Resource Factory Section */}
+          <AnimatePresence>
+            {sidebarExpanded && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-3 overflow-hidden"
+              >
+                <p className="text-[10px] uppercase tracking-widest text-white/40 px-2 mb-1.5 font-medium">
+                  Resource Factory
+                </p>
+                <div className="space-y-0.5">
+                  {[
+                    { name: 'ERIC (1.5M+ records)', on: true },
+                    { name: 'OER Commons', on: true },
+                    { name: 'AIATSIS', on: true },
+                    { name: 'Khan Academy', on: false },
+                    { name: 'CSIRO Education', on: true },
+                    { name: 'ABC Education', on: true },
+                    { name: 'Bureau of Meteorology', on: false },
+                    { name: 'National Library of Aus.', on: false },
+                  ].map(src => (
+                    <button
+                      key={src.name}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-white/10 transition-colors group"
+                    >
+                      {src.on ? (
+                        <ToggleRight className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                      ) : (
+                        <ToggleLeft className="w-3.5 h-3.5 text-white/30 flex-shrink-0" />
+                      )}
+                      <span className={cn(
+                        'text-[12px] truncate flex-1',
+                        src.on ? 'text-white/80' : 'text-white/40'
+                      )}>
+                        {src.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {!sidebarExpanded && (
+            <SidebarItem icon={Database} label="Resource Factory" expanded={sidebarExpanded} />
+          )}
 
           {/* Chat History (visible when expanded) */}
           <AnimatePresence>
@@ -173,20 +250,20 @@ export function Dashboard() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mt-4 overflow-hidden"
+                className="mt-3 overflow-hidden"
               >
-                <p className="text-[10px] uppercase tracking-widest text-white/40 px-2 mb-2 font-medium">
+                <p className="text-[10px] uppercase tracking-widest text-white/40 px-2 mb-1.5 font-medium">
                   Recent Searches
                 </p>
-                <div className="space-y-0.5 max-h-60 overflow-y-auto">
-                  {chatHistory.slice(0, 8).map(entry => (
+                <div className="space-y-0.5 max-h-40 overflow-y-auto">
+                  {chatHistory.slice(0, 6).map(entry => (
                     <button
                       key={entry.id}
                       onClick={() => handleHistoryClick(entry)}
-                      className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left hover:bg-white/10 transition-colors group"
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-white/10 transition-colors group"
                     >
                       <History className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />
-                      <span className="text-[13px] text-white/70 truncate flex-1 group-hover:text-white transition-colors">
+                      <span className="text-[12px] text-white/70 truncate flex-1 group-hover:text-white transition-colors">
                         {entry.query}
                       </span>
                       {entry.saved && (
