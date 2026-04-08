@@ -1,26 +1,46 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   ArrowRight,
   FolderOpen,
   Search,
   ChevronDown,
+  ChevronRight,
   X,
+  BookMarked,
+  ExternalLink,
 } from 'lucide-react';
 import { AppShell } from '@/components/edulens';
 import Link from 'next/link';
 import type { Resource } from '@/types/edulens';
+import { sampleResources } from '@/lib/demoData';
+import { showToast } from '@/lib/toast';
 
 // ---------------------------------------------------------------------------
-// Static demo folders
+// Static demo folders with resources
 // ---------------------------------------------------------------------------
 const FOLDERS = [
-  { name: 'Ecosystem', count: 12 },
-  { name: 'Climate Change', count: 9 },
-  { name: 'Mass communication', count: 3 },
+  {
+    name: 'Ecosystem',
+    count: 3,
+    color: '#3b82f6',
+    resources: [sampleResources[0], sampleResources[2], sampleResources[3]],
+  },
+  {
+    name: 'Climate Change',
+    count: 2,
+    color: '#f97316',
+    resources: [sampleResources[1], sampleResources[3]],
+  },
+  {
+    name: 'Mass Communication',
+    count: 1,
+    color: '#8b5cf6',
+    resources: [sampleResources[4]],
+  },
 ];
 
 const FILTER_TABS = ['All', 'Articles', 'Lessons', 'Videos', 'Collections'] as const;
@@ -33,6 +53,8 @@ export default function LibraryPage() {
   const [savedResources, setSavedResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
+  const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
 
   // right-column filter state
   const [tags, setTags] = useState<string[]>(['Water Scarcity', 'Water', 'Sustainability']);
@@ -41,18 +63,31 @@ export default function LibraryPage() {
     const saved = localStorage.getItem('edulens-library');
     if (saved) {
       try {
-        setSavedResources(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setSavedResources(parsed.length > 0 ? parsed : [sampleResources[0], sampleResources[2]]);
       } catch {
-        // ignore
+        setSavedResources([sampleResources[0], sampleResources[2]]);
       }
+    } else {
+      // Demo fallback: pre-populate with 2 resources
+      setSavedResources([sampleResources[0], sampleResources[2]]);
     }
     setIsLoading(false);
+
+    // Check for ?resource= param
+    const params = new URLSearchParams(window.location.search);
+    const rid = params.get('resource');
+    if (rid) {
+      const found = sampleResources.find((r) => r.id === rid);
+      if (found) setSelectedResource(found);
+    }
   }, []);
 
   const handleRemove = (resourceId: string) => {
     const updated = savedResources.filter((r) => r.id !== resourceId);
     setSavedResources(updated);
     localStorage.setItem('edulens-library', JSON.stringify(updated));
+    showToast('Resource removed from library.');
   };
 
   const removeTag = (tag: string) => setTags((prev) => prev.filter((t) => t !== tag));
@@ -73,13 +108,13 @@ export default function LibraryPage() {
       <div className="px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* ================================================================
-              LEFT COLUMN — 65%
+              LEFT COLUMN
           ================================================================ */}
           <div className="flex-[13] min-w-0">
             {/* Header */}
             <div className="mb-5">
               <h1 className="text-[32px] font-bold text-[#0f172a] leading-tight">Library</h1>
-              <p className="text-[14px] text-[#64748b] mt-0.5">Your saved Resources</p>
+              <p className="text-[14px] text-[#64748b] mt-0.5">Your saved resources</p>
             </div>
 
             {/* Filter tabs */}
@@ -102,22 +137,58 @@ export default function LibraryPage() {
             {/* Collection folders */}
             <div className="space-y-3 mb-8">
               {FOLDERS.map((folder) => (
-                <div
-                  key={folder.name}
-                  className="flex items-center justify-between bg-white border border-[#e2e8f0] rounded-[12px] px-5 py-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-[#3b82f6] rounded-full flex items-center justify-center shrink-0">
-                      <Plus className="w-4 h-4 text-white" />
+                <div key={folder.name} className="bg-white border border-[#e2e8f0] rounded-[12px] overflow-hidden">
+                  <button
+                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-[#f8fafc] transition-colors"
+                    onClick={() => setExpandedFolder(expandedFolder === folder.name ? null : folder.name)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                        style={{ background: folder.color }}
+                      >
+                        <Plus className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-[15px] font-semibold text-[#0f172a]">{folder.name}</span>
+                      <span className="border border-[#e2e8f0] rounded-full text-[12px] px-3 py-1 text-[#64748b]">
+                        {String(folder.count).padStart(2, '0')} resources
+                      </span>
                     </div>
-                    <span className="text-[15px] font-semibold text-[#0f172a]">{folder.name}</span>
-                    <span className="border border-[#e2e8f0] rounded-full text-[12px] px-3 py-1 text-[#64748b]">
-                      {String(folder.count).padStart(2, '0')} resources
-                    </span>
-                  </div>
-                  <button className="w-10 h-10 border border-[#e2e8f0] rounded-full flex items-center justify-center hover:bg-[#f8fafc] transition-colors">
-                    <ArrowRight className="w-4 h-4 text-[#64748b]" />
+                    <ChevronRight
+                      className="w-4 h-4 text-[#64748b] transition-transform"
+                      style={{ transform: expandedFolder === folder.name ? 'rotate(90deg)' : 'none' }}
+                    />
                   </button>
+
+                  <AnimatePresence>
+                    {expandedFolder === folder.name && (
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: 'auto' }}
+                        exit={{ height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="border-t border-[#f0f0f0] divide-y divide-[#f8fafc]">
+                          {folder.resources.map((r) => (
+                            <button
+                              key={r.id}
+                              onClick={() => setSelectedResource(r)}
+                              className="w-full flex items-center gap-3 px-5 py-3 hover:bg-[#f8fafc] transition-colors text-left"
+                            >
+                              <span className="w-8 h-8 rounded-lg bg-[#f0f0f0] flex items-center justify-center text-[14px] shrink-0">
+                                {r.type === 'video' ? '▶' : r.type === 'interactive' ? '🔬' : r.type === 'pdf' ? '📄' : '📝'}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[14px] font-medium text-[#0f172a] truncate">{r.title}</p>
+                                <p className="text-[12px] text-[#94a3b8]">{r.source.name}</p>
+                              </div>
+                              <ArrowRight className="w-4 h-4 text-[#94a3b8] shrink-0" />
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               ))}
             </div>
@@ -135,10 +206,7 @@ export default function LibraryPage() {
               {isLoading ? (
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="h-[100px] rounded-[12px] bg-[#f0f0f0] animate-pulse"
-                    />
+                    <div key={i} className="h-[100px] rounded-[12px] bg-[#f0f0f0] animate-pulse" />
                   ))}
                 </div>
               ) : filteredResources.length === 0 ? (
@@ -172,6 +240,7 @@ export default function LibraryPage() {
                       resource={resource}
                       isLast={i === filteredResources.length - 1}
                       onRemove={handleRemove}
+                      onSelect={() => setSelectedResource(resource)}
                     />
                   ))}
                 </div>
@@ -180,16 +249,72 @@ export default function LibraryPage() {
           </div>
 
           {/* ================================================================
-              RIGHT COLUMN — 35%
+              RIGHT COLUMN
           ================================================================ */}
-          <div className="flex-[7] min-w-0 lg:sticky lg:top-6 lg:self-start">
+          <div className="flex-[7] min-w-0 lg:sticky lg:top-6 lg:self-start flex flex-col gap-4">
+
+            {/* Resource detail panel */}
+            <AnimatePresence mode="wait">
+              {selectedResource && (
+                <motion.div
+                  key={selectedResource.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  className="bg-white border border-[#e2e8f0] rounded-2xl p-5"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="text-[15px] font-bold text-[#0f172a] leading-snug flex-1 min-w-0 pr-2">
+                      {selectedResource.title}
+                    </h3>
+                    <button onClick={() => setSelectedResource(null)} className="p-1 rounded hover:bg-[#f0f0f0]">
+                      <X className="w-4 h-4 text-[#64748b]" />
+                    </button>
+                  </div>
+                  {selectedResource.thumbnail && (
+                    <img
+                      src={selectedResource.thumbnail}
+                      alt={selectedResource.title}
+                      className="w-full h-[120px] object-cover rounded-[10px] mb-3"
+                    />
+                  )}
+                  <p className="text-[13px] text-[#64748b] mb-3 line-clamp-3">
+                    {selectedResource.description}
+                  </p>
+                  <div className="flex items-center justify-between text-[12px] text-[#94a3b8] mb-4">
+                    <span>{selectedResource.source.name}</span>
+                    <span className="bg-[#dcfce7] text-[#16a34a] rounded-full px-2 py-0.5 font-medium">
+                      Score: {selectedResource.scorecard.overallScore}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <a
+                      href={selectedResource.source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 flex-1 justify-center bg-[#0f172a] text-white rounded-full py-2 text-[13px] font-medium hover:bg-[#1e293b] transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Open Resource
+                    </a>
+                    <button
+                      onClick={() => { showToast(`"${selectedResource.title}" saved.`); }}
+                      className="flex items-center gap-1.5 border border-[#e2e8f0] rounded-full px-3 py-2 text-[13px] text-[#64748b] hover:border-[#cbd5e1] transition-colors"
+                    >
+                      <BookMarked className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Filter panel */}
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
               <h3 className="text-[16px] font-bold text-[#0f172a]">Search Resources</h3>
               <p className="text-[13px] text-[#64748b] mt-0.5 mb-4">
-                Find the resources more easily by using filters
+                Find resources more easily using filters
               </p>
 
-              {/* Dropdowns */}
               <div className="space-y-3 mb-4">
                 {(['Year Level', 'Course', 'Saved in last month'] as const).map((label) => (
                   <button
@@ -202,11 +327,10 @@ export default function LibraryPage() {
                 ))}
               </div>
 
-              {/* Tags */}
               <div className="mb-5">
                 <p className="text-[13px] font-semibold text-[#0f172a] mb-0.5">Tags</p>
                 <p className="text-[12px] text-[#64748b] mb-3">
-                  Add the tags to get perfect results.
+                  Add tags to get more precise results.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {tags.map((tag) => (
@@ -220,18 +344,26 @@ export default function LibraryPage() {
                       </button>
                     </span>
                   ))}
-                  <button className="border border-dashed border-[#e2e8f0] rounded-full px-3 py-1 text-[13px] text-[#64748b] hover:border-[#cbd5e1] transition-colors">
+                  <button
+                    onClick={() => showToast('Tag added!')}
+                    className="border border-dashed border-[#e2e8f0] rounded-full px-3 py-1 text-[13px] text-[#64748b] hover:border-[#cbd5e1] transition-colors"
+                  >
                     + Add Tags
                   </button>
                 </div>
               </div>
 
-              {/* Footer actions */}
               <div className="flex items-center gap-2">
-                <button className="bg-[#0f172a] text-white rounded-full px-5 py-2 text-[13px] font-medium hover:bg-[#1e293b] transition-colors">
+                <button
+                  onClick={() => showToast('Filters applied!')}
+                  className="bg-[#0f172a] text-white rounded-full px-5 py-2 text-[13px] font-medium hover:bg-[#1e293b] transition-colors"
+                >
                   Search →
                 </button>
-                <button className="flex items-center gap-1.5 border border-[#e2e8f0] rounded-full px-4 py-2 text-[13px] text-[#64748b] hover:border-[#cbd5e1] transition-colors">
+                <button
+                  onClick={() => { setTags([]); showToast('Filters cleared.'); }}
+                  className="flex items-center gap-1.5 border border-[#e2e8f0] rounded-full px-4 py-2 text-[13px] text-[#64748b] hover:border-[#cbd5e1] transition-colors"
+                >
                   Clear All
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -251,32 +383,29 @@ function ResourceRow({
   resource,
   isLast,
   onRemove,
+  onSelect,
 }: {
   resource: Resource;
   isLast: boolean;
   onRemove: (id: string) => void;
+  onSelect: () => void;
 }) {
   return (
-    <div
-      className={`flex items-start gap-4 py-5 ${isLast ? '' : 'border-b border-[#f0f0f0]'}`}
-    >
+    <div className={`flex items-start gap-4 py-5 ${isLast ? '' : 'border-b border-[#f0f0f0]'}`}>
       {/* Text side */}
-      <div className="flex-1 min-w-0">
-        <h4 className="text-[16px] font-semibold text-[#0f172a] leading-snug">{resource.title}</h4>
+      <button onClick={onSelect} className="flex-1 min-w-0 text-left">
+        <h4 className="text-[16px] font-semibold text-[#0f172a] leading-snug hover:underline">{resource.title}</h4>
         {resource.tags && resource.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
             {resource.tags.slice(0, 4).map((tag) => (
-              <span
-                key={tag}
-                className="border border-[#e2e8f0] rounded-full text-[11px] px-2 py-1 text-[#64748b]"
-              >
+              <span key={tag} className="border border-[#e2e8f0] rounded-full text-[11px] px-2 py-1 text-[#64748b]">
                 {tag}
               </span>
             ))}
           </div>
         )}
         <p className="text-[13px] text-[#64748b] mt-2 line-clamp-2">{resource.description}</p>
-      </div>
+      </button>
 
       {/* Thumbnail + action */}
       <div className="relative shrink-0">

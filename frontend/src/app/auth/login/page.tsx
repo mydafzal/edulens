@@ -19,6 +19,7 @@ export default function Login() {
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        localStorage.setItem('scora-token', 'demo');
         router.push('/role');
     };
 

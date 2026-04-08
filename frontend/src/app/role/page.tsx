@@ -34,6 +34,7 @@ export default function RolePage() {
   const handleContinue = () => {
     if (!selected) return;
     localStorage.setItem("edulens-role", selected);
+    localStorage.setItem("scora-role", selected);
     router.push("/profile");
   };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -131,6 +131,19 @@ export default function ProfileSetup() {
     subjects:   [] as string[],
   });
 
+  // Pre-fill from saved profile
+  useEffect(() => {
+    const saved = localStorage.getItem('edulens-profile');
+    const completed = localStorage.getItem('edulens-profile-completed') === 'true';
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setProfile(parsed);
+        if (completed) setStep(4);
+      } catch { /* ignore */ }
+    }
+  }, []);
+
   // --- unchanged logic ---
   const toggleYearLevel = (year: string) =>
     setProfile(prev => ({
@@ -152,6 +165,8 @@ export default function ProfileSetup() {
     localStorage.setItem('edulens-profile', JSON.stringify(profile));
     localStorage.setItem('edulens-profile-completed', 'true');
     setStep(4);
+    // Auto-redirect after 2 seconds if this is first-time setup
+    setTimeout(() => router.push('/'), 2000);
   };
 
   const canProceed = () => {

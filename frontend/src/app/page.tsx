@@ -6,166 +6,14 @@ import {
   Search,
   ArrowRight,
   ArrowUpRight,
-  Check,
-  X,
   ChevronDown,
+  X,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { ResourceCard, LocalizationPanel, AppShell } from '@/components/edulens';
-import type { Resource, ScopeLevel, Adaptation, LocalContext } from '@/types/edulens';
-
-// ---------------------------------------------------------------------------
-// Sample data (unchanged)
-// ---------------------------------------------------------------------------
-const sampleResources: Resource[] = [
-  {
-    id: '1',
-    title: 'Water Scarcity in the Murray-Darling Basin',
-    description:
-      'Comprehensive overview of water management challenges in Australia\'s most important river system.',
-    type: 'article',
-    thumbnail:
-      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&h=400&fit=crop',
-    source: {
-      name: 'ABC Education',
-      url: 'https://education.abc.net.au',
-      author: 'Dr. Sarah Mitchell',
-      publishDate: '2024-08-15',
-      license: 'CC BY-NC',
-      licenseType: 'cc-by-nc',
-    },
-    scorecard: {
-      accuracy: { name: 'accuracy', label: 'Accuracy', level: 'safe', score: 92, rationale: 'Information verified against Bureau of Meteorology data.' },
-      bias: { name: 'bias', label: 'Bias', level: 'safe', score: 88, rationale: 'Presents multiple stakeholder perspectives.' },
-      ageAppropriateness: { name: 'ageAppropriateness', label: 'Age Appropriate', level: 'safe', score: 95, rationale: 'Suitable for Years 9-10.' },
-      culturalSensitivity: { name: 'culturalSensitivity', label: 'Cultural Sensitivity', level: 'safe', score: 85, rationale: 'Includes First Nations perspectives.' },
-      safety: { name: 'safety', label: 'Safety', level: 'safe', score: 100, rationale: 'No safety concerns.' },
-      overallScore: 92,
-    },
-    curriculumAlignment: ['ACHGK051', 'ACHGK052'],
-    yearLevels: [9, 10],
-    subjects: ['Geography', 'Science'],
-    tags: ['Water', 'Environment', 'Murray-Darling'],
-  },
-  {
-    id: '2',
-    title: 'Climate Data Visualization Tool',
-    description:
-      'Interactive tool for exploring climate data trends across Australian regions.',
-    type: 'interactive',
-    thumbnail:
-      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop',
-    source: {
-      name: 'Bureau of Meteorology',
-      url: 'http://www.bom.gov.au/climate/data/',
-      publishDate: '2024-06-01',
-      license: 'CC BY',
-      licenseType: 'cc-by',
-    },
-    scorecard: {
-      accuracy: { name: 'accuracy', label: 'Accuracy', level: 'safe', score: 98, rationale: 'Official government data source.' },
-      bias: { name: 'bias', label: 'Bias', level: 'safe', score: 95, rationale: 'Raw data presentation.' },
-      ageAppropriateness: { name: 'ageAppropriateness', label: 'Age Appropriate', level: 'caution', score: 72, rationale: 'May need teacher guidance.' },
-      culturalSensitivity: { name: 'culturalSensitivity', label: 'Cultural Sensitivity', level: 'safe', score: 90, rationale: 'Neutral data presentation.' },
-      safety: { name: 'safety', label: 'Safety', level: 'safe', score: 100, rationale: 'No safety concerns.' },
-      overallScore: 91,
-    },
-    yearLevels: [9, 10, 11, 12],
-    subjects: ['Science', 'Geography', 'Mathematics'],
-    tags: ['Climate', 'Data', 'Interactive'],
-  },
-  {
-    id: '3',
-    title: 'First Nations Water Stories: The Murray River',
-    description:
-      'Documentary exploring the cultural significance of the Murray River to First Nations peoples.',
-    type: 'video',
-    thumbnail:
-      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=400&fit=crop',
-    source: {
-      name: 'AIATSIS',
-      url: 'https://aiatsis.gov.au',
-      author: 'Ngarrindjeri Elders Council',
-      publishDate: '2023-11-20',
-      license: 'Educational Use',
-      licenseType: 'copyrighted',
-    },
-    scorecard: {
-      accuracy: { name: 'accuracy', label: 'Accuracy', level: 'safe', score: 95, rationale: 'Developed with Traditional Owners.' },
-      bias: { name: 'bias', label: 'Bias', level: 'safe', score: 90, rationale: 'Centres First Nations perspectives.' },
-      ageAppropriateness: { name: 'ageAppropriateness', label: 'Age Appropriate', level: 'safe', score: 88, rationale: 'Suitable for Years 7+.' },
-      culturalSensitivity: { name: 'culturalSensitivity', label: 'Cultural Sensitivity', level: 'safe', score: 98, rationale: 'Exemplary cultural protocols.' },
-      safety: { name: 'safety', label: 'Safety', level: 'safe', score: 100, rationale: 'No safety concerns.' },
-      overallScore: 94,
-    },
-    yearLevels: [7, 8, 9, 10],
-    subjects: ['Geography', 'History', 'Aboriginal Studies'],
-    tags: ['First Nations', 'Water', 'Culture'],
-  },
-  {
-    id: '4',
-    title: 'Sustainable Agriculture in Regional Australia',
-    description:
-      'Case study examining sustainable farming practices in drought-prone regions.',
-    type: 'pdf',
-    source: {
-      name: 'CSIRO',
-      url: 'https://csiro.au',
-      author: 'Agricultural Research Division',
-      publishDate: '2024-03-10',
-      license: 'CC BY-SA',
-      licenseType: 'cc-by-sa',
-    },
-    scorecard: {
-      accuracy: { name: 'accuracy', label: 'Accuracy', level: 'safe', score: 96, rationale: 'Peer-reviewed CSIRO research.' },
-      bias: { name: 'bias', label: 'Bias', level: 'caution', score: 78, rationale: 'Focuses on successful adaptations.' },
-      ageAppropriateness: { name: 'ageAppropriateness', label: 'Age Appropriate', level: 'safe', score: 82, rationale: 'General audience writing.' },
-      culturalSensitivity: { name: 'culturalSensitivity', label: 'Cultural Sensitivity', level: 'caution', score: 70, rationale: 'Limited Indigenous perspectives.' },
-      safety: { name: 'safety', label: 'Safety', level: 'safe', score: 100, rationale: 'No safety concerns.' },
-      overallScore: 85,
-    },
-    yearLevels: [9, 10, 11],
-    subjects: ['Geography', 'Agriculture', 'Science'],
-    tags: ['Agriculture', 'Sustainability', 'Drought'],
-  },
-];
-
-const sampleAdaptations: Adaptation[] = [
-  {
-    type: 'example',
-    original: 'Consider a major river system in your country...',
-    adapted: 'The Condamine-Balonne River system in the Darling Downs region faces similar challenges...',
-    rationale: 'Replaced generic example with local Toowoomba reference',
-  },
-  {
-    type: 'reference',
-    original: 'Local farmers have adapted to water scarcity...',
-    adapted: 'Farmers in the Lockyer Valley have pioneered innovative drip irrigation systems...',
-    rationale: 'Added regional Queensland agricultural reference',
-  },
-  {
-    type: 'cultural',
-    original: 'Indigenous communities have traditional water management practices...',
-    adapted: 'The Jarowair and Giabal peoples, Traditional Owners of the Toowoomba region, have practiced sustainable water management for thousands of years...',
-    rationale: 'Incorporated local First Nations context',
-  },
-  {
-    type: 'reading-level',
-    original: 'The anthropogenic factors contributing to hydrological stress...',
-    adapted: 'Human activities that put pressure on water supplies...',
-    rationale: 'Simplified for Year 9 reading level',
-  },
-];
-
-const sampleLocalContext: LocalContext = {
-  country: 'Australia',
-  state: 'Queensland',
-  region: 'Darling Downs',
-  suburb: 'Toowoomba',
-  yearLevel: 9,
-  subject: 'Geography',
-  studentInterests: ['Sports', 'Gaming', 'Music'],
-  communityAnchors: ['Toowoomba Grammar', 'USQ', 'Picnic Point'],
-};
+import type { Resource, ScopeLevel, Adaptation } from '@/types/edulens';
+import { sampleResources, sampleAdaptations, sampleLocalContext } from '@/lib/demoData';
+import { showToast } from '@/lib/toast';
 
 // ---------------------------------------------------------------------------
 // Static sidebar data
@@ -192,17 +40,89 @@ const recentActivityItems = [
 ];
 
 // ---------------------------------------------------------------------------
+// Dropdown picker (Year Level / Course / Location)
+// ---------------------------------------------------------------------------
+const YEAR_LEVEL_OPTIONS = ['Year 7', 'Year 8', 'Year 9', 'Year 10', 'Year 11', 'Year 12'];
+const COURSE_OPTIONS = ['Geography', 'History', 'Science', 'English', 'Mathematics', 'Art'];
+const LOCATION_OPTIONS = ['Queensland', 'New South Wales', 'Victoria', 'South Australia', 'Western Australia'];
+
+function DropdownPicker({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: string[];
+  value: string | null;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="flex items-center gap-1.5 border border-[#e2e8f0] rounded-full px-4 py-2 text-[13px] text-[#0f172a] hover:bg-[#f8fafc] transition-colors"
+        style={value ? { borderColor: '#0f172a', background: '#f8fafc' } : {}}
+      >
+        {value ?? label}
+        {value ? (
+          <button
+            onClick={(e) => { e.stopPropagation(); onChange(''); setOpen(false); }}
+            className="ml-1 hover:text-red-500 transition-colors"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        ) : (
+          <ChevronDown className="w-3.5 h-3.5 text-[#94a3b8]" />
+        )}
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.ul
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="absolute top-full mt-1 left-0 bg-white border border-[#e2e8f0] rounded-[12px] shadow-lg z-50 py-1 min-w-[160px]"
+          >
+            {options.map((opt) => (
+              <li key={opt}>
+                <button
+                  onClick={() => { onChange(opt); setOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-[13px] text-[#0f172a] hover:bg-[#f8fafc] transition-colors"
+                >
+                  {opt}
+                </button>
+              </li>
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 export default function Home() {
+  const router = useRouter();
   const [searchInputValue, setSearchInputValue] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Resource[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [showLocalization, setShowLocalization] = useState(false);
-  const [notification, setNotification] = useState<{ message: string } | null>(null);
   const [profileData, setProfileData] = useState<{
     schoolName?: string;
     state?: string;
@@ -211,24 +131,32 @@ export default function Home() {
     subjects?: string[];
   } | null>(null);
 
+  // Classroom setup dropdowns
+  const [yearLevel, setYearLevel] = useState<string | null>(null);
+  const [course, setCourse] = useState<string | null>(null);
+  const [location, setLocation] = useState<string | null>(null);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const savedProfile = localStorage.getItem('edulens-profile');
     if (savedProfile) {
-      try {
-        setProfileData(JSON.parse(savedProfile));
-      } catch {
-        // ignore
-      }
+      try { setProfileData(JSON.parse(savedProfile)); } catch { /* ignore */ }
     }
+    // Pre-fill from URL query
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    if (q) {
+      setSearchInputValue(q);
+      handleSearch(q, 'state');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const displayName = profileData?.schoolName ?? 'Teacher';
 
-  const handleSearch = useCallback(async (query: string, scope: ScopeLevel) => {
+  const handleSearch = useCallback(async (query: string, _scope: ScopeLevel) => {
     if (!query.trim()) return;
-    setSearchQuery(query);
     setIsSearching(true);
     setHasSearched(true);
 
@@ -238,11 +166,12 @@ export default function Home() {
 
     await new Promise((resolve) => setTimeout(resolve, 1200));
 
+    const q = query.toLowerCase();
     const filtered = sampleResources.filter(
       (r) =>
-        r.title.toLowerCase().includes(query.toLowerCase()) ||
-        r.description.toLowerCase().includes(query.toLowerCase()) ||
-        r.tags?.some((t) => query.toLowerCase().includes(t.toLowerCase()))
+        r.title.toLowerCase().includes(q) ||
+        r.description.toLowerCase().includes(q) ||
+        r.tags?.some((t) => t.toLowerCase().includes(q))
     );
     setSearchResults(filtered.length > 0 ? filtered : sampleResources);
     setIsSearching(false);
@@ -261,8 +190,7 @@ export default function Home() {
   const handleAcceptAdaptations = (adaptations: Adaptation[]) => {
     setShowLocalization(false);
     setSelectedResource(null);
-    setNotification({ message: `${adaptations.length} adaptations applied successfully!` });
-    setTimeout(() => setNotification(null), 4000);
+    showToast(`${adaptations.length} adaptations applied successfully!`);
   };
 
   const handleSaveResource = (resource: Resource) => {
@@ -271,17 +199,28 @@ export default function Home() {
     if (!alreadySaved) {
       saved.push(resource);
       localStorage.setItem('edulens-library', JSON.stringify(saved));
-      setNotification({ message: `"${resource.title}" saved to library.` });
+      showToast(`"${resource.title}" saved to library.`);
     } else {
-      setNotification({ message: 'Already in your library.' });
+      showToast('Already in your library.');
     }
-    setTimeout(() => setNotification(null), 3000);
   };
 
   const handleShareResource = (resource: Resource) => {
-    navigator.clipboard.writeText(resource.source.url);
-    setNotification({ message: 'Link copied to clipboard!' });
-    setTimeout(() => setNotification(null), 3000);
+    navigator.clipboard.writeText(resource.source.url).catch(() => {});
+    showToast('Link copied to clipboard!');
+  };
+
+  const handleCreateClassroom = () => {
+    const parts: string[] = [];
+    if (yearLevel) parts.push(yearLevel);
+    if (course) parts.push(course);
+    if (location) parts.push(location);
+    if (parts.length === 0) {
+      router.push('/profile');
+      return;
+    }
+    showToast(`Classroom set: ${parts.join(' · ')}`);
+    handleSearch(parts.join(' '), 'state');
   };
 
   const suggestedResources = hasSearched ? searchResults : sampleResources;
@@ -306,8 +245,9 @@ export default function Home() {
         {/* ---------------------------------------------------------------- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {/* Card 1 — Instant Lesson Creation */}
-          <div
-            className="flex flex-col gap-3 p-5 rounded-2xl"
+          <button
+            onClick={() => router.push('/plans')}
+            className="flex flex-col gap-3 p-5 rounded-2xl text-left hover:opacity-90 transition-opacity"
             style={{ background: '#f97316' }}
           >
             <div>
@@ -315,14 +255,20 @@ export default function Home() {
               <p className="text-[12px] text-white/80 mt-0.5">Generate ready-to-use lesson plans</p>
             </div>
             <div className="mt-auto pt-2">
-              <button className="bg-white text-[#f97316] rounded-full px-4 py-2 text-[13px] font-medium hover:bg-white/90 transition-colors">
+              <span className="bg-white text-[#f97316] rounded-full px-4 py-2 text-[13px] font-medium">
                 Generate Lesson Plan →
-              </button>
+              </span>
             </div>
-          </div>
+          </button>
 
           {/* Card 2 — Trusted Evaluation */}
-          <div className="flex flex-col gap-3 p-5 rounded-2xl bg-white border border-[#e2e8f0]">
+          <button
+            onClick={() => {
+              searchInputRef.current?.focus();
+              showToast('Search for a resource to see its quality scorecard.');
+            }}
+            className="flex flex-col gap-3 p-5 rounded-2xl bg-white border border-[#e2e8f0] text-left hover:border-[#cbd5e1] transition-colors"
+          >
             <div>
               <p className="text-[15px] font-semibold text-[#0f172a]">📊 Trusted Evaluation</p>
               <p className="text-[12px] text-[#64748b] mt-0.5">See quality, bias &amp; safety insights</p>
@@ -335,10 +281,13 @@ export default function Home() {
                 5% errors
               </span>
             </div>
-          </div>
+          </button>
 
           {/* Card 3 — One-Click Adaptation */}
-          <div className="flex flex-col gap-3 p-5 rounded-2xl bg-white border border-[#e2e8f0]">
+          <button
+            onClick={() => router.push('/library')}
+            className="flex flex-col gap-3 p-5 rounded-2xl bg-white border border-[#e2e8f0] text-left hover:border-[#cbd5e1] transition-colors"
+          >
             <div>
               <p className="text-[15px] font-semibold text-[#0f172a]">🌐 One-Click Adaptation</p>
               <p className="text-[12px] text-[#64748b] mt-0.5">Tailor content to your classroom</p>
@@ -351,7 +300,7 @@ export default function Home() {
                 Classrooms
               </span>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* ---------------------------------------------------------------- */}
@@ -393,16 +342,28 @@ export default function Home() {
                 Setup your classroom profile
               </p>
               <div className="flex flex-wrap gap-2 items-center">
-                {(['Year Level', 'Course', 'Location'] as const).map((label) => (
-                  <button
-                    key={label}
-                    className="flex items-center gap-1.5 border border-[#e2e8f0] rounded-full px-4 py-2 text-[13px] text-[#0f172a] hover:bg-[#f8fafc] transition-colors"
-                  >
-                    {label}
-                    <ChevronDown className="w-3.5 h-3.5 text-[#94a3b8]" />
-                  </button>
-                ))}
-                <button className="flex items-center gap-1.5 bg-[#0f172a] text-white rounded-full px-5 py-2 text-[13px] font-medium hover:bg-[#1e293b] transition-colors">
+                <DropdownPicker
+                  label="Year Level"
+                  options={YEAR_LEVEL_OPTIONS}
+                  value={yearLevel}
+                  onChange={(v) => setYearLevel(v || null)}
+                />
+                <DropdownPicker
+                  label="Course"
+                  options={COURSE_OPTIONS}
+                  value={course}
+                  onChange={(v) => setCourse(v || null)}
+                />
+                <DropdownPicker
+                  label="Location"
+                  options={LOCATION_OPTIONS}
+                  value={location}
+                  onChange={(v) => setLocation(v || null)}
+                />
+                <button
+                  onClick={handleCreateClassroom}
+                  className="flex items-center gap-1.5 bg-[#0f172a] text-white rounded-full px-5 py-2 text-[13px] font-medium hover:bg-[#1e293b] transition-colors"
+                >
                   Create classroom
                   <ArrowUpRight className="w-3.5 h-3.5" />
                 </button>
@@ -413,10 +374,13 @@ export default function Home() {
             <section>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-[20px] font-bold text-[#0f172a]">
-                  Suggested For You{' '}
+                  {hasSearched ? 'Search Results' : 'Suggested For You'}{' '}
                   <span className="text-[14px] font-normal text-[#94a3b8]">(AI recommended)</span>
                 </h2>
-                <button className="text-[13px] text-[#64748b] hover:text-[#0f172a] transition-colors">
+                <button
+                  onClick={() => router.push('/library')}
+                  className="text-[13px] text-[#64748b] hover:text-[#0f172a] transition-colors"
+                >
                   View All →
                 </button>
               </div>
@@ -452,7 +416,10 @@ export default function Home() {
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[18px] font-bold text-[#0f172a]">Automation Alerts</h3>
-                <button className="text-[13px] text-[#64748b] hover:text-[#0f172a] transition-colors">
+                <button
+                  onClick={() => router.push('/workflows')}
+                  className="text-[13px] text-[#64748b] hover:text-[#0f172a] transition-colors"
+                >
                   View All →
                 </button>
               </div>
@@ -473,7 +440,7 @@ export default function Home() {
                             {alert.date}
                           </span>
                         </div>
-                        <p className="text-[12px] text-[#94a3b8] mt-1 pl-0">{alert.description}</p>
+                        <p className="text-[12px] text-[#94a3b8] mt-1">{alert.description}</p>
                       </div>
                     </div>
                   </div>
@@ -485,7 +452,10 @@ export default function Home() {
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[18px] font-bold text-[#0f172a]">Recent Activity</h3>
-                <button className="text-[13px] text-[#64748b] hover:text-[#0f172a] transition-colors">
+                <button
+                  onClick={() => router.push('/library')}
+                  className="text-[13px] text-[#64748b] hover:text-[#0f172a] transition-colors"
+                >
                   View All →
                 </button>
               </div>
@@ -541,31 +511,6 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Notification Toast                                                   */}
-      {/* ------------------------------------------------------------------ */}
-      <AnimatePresence>
-        {notification && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-50"
-          >
-            <div className="flex items-center gap-3 px-4 py-3 bg-white border border-[#e2e8f0] rounded-[12px] shadow-md">
-              <Check className="w-5 h-5 text-[#f97316] flex-shrink-0" />
-              <p className="text-[15px] text-[#0f172a]">{notification.message}</p>
-              <button
-                onClick={() => setNotification(null)}
-                className="p-1.5 rounded-[6px] hover:bg-[#f0f0f0] transition-colors"
-              >
-                <X className="w-4 h-4 text-[#64748b]" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </AppShell>
   );
 }
@@ -584,6 +529,8 @@ function SuggestedCard({
   onSave: (r: Resource) => void;
   onShare: (r: Resource) => void;
 }) {
+  void onSave;
+  void onShare;
   const subject = resource.subjects?.[0] ?? resource.type;
 
   return (

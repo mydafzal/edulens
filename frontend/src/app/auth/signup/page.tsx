@@ -1,6 +1,7 @@
 "use client"
 import { Eye, EyeOff, ArrowUpRight } from 'lucide-react';
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import google from "../../../../public/assets/auth/google.svg";
 import Image from 'next/image';
 import Link from 'next/link';
@@ -11,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 export default function Signup() {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [confimPaswordVisible, setConfirmPasswordVisible] = useState(false);
+    const router = useRouter();
 
     const togglePasswordVisibility = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
@@ -31,7 +33,7 @@ export default function Signup() {
                 </p>
             </div>
 
-            <form className="mb-6 space-y-3">
+            <form className="mb-6 space-y-3" onSubmit={(e) => { e.preventDefault(); localStorage.setItem('scora-token', 'demo'); router.push('/role'); }}>
                 <Input
                     className="h-[52px] rounded-[12px] border-0 bg-white px-4 text-[14px] placeholder:text-[#94a3b8] focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_2px_rgba(0,0,0,0.08)]"
                     type="text"
