@@ -52,6 +52,7 @@ interface SearchPipelineProps {
   userRole: UserRole;
   teachingTo?: string;
   classroomContext?: ClassroomContextData;
+  webSearchEnabled?: boolean;
 }
 
 const stageConfig: { id: SearchStage; label: string; icon: typeof Search; description: string; detail: string }[] = [
@@ -85,7 +86,7 @@ const stageConfig: { id: SearchStage; label: string; icon: typeof Search; descri
   },
 ];
 
-export function SearchPipeline({ query, onBack, onNewSearch, userRole, teachingTo = 'all', classroomContext }: SearchPipelineProps) {
+export function SearchPipeline({ query, onBack, onNewSearch, userRole, teachingTo = 'all', classroomContext, webSearchEnabled }: SearchPipelineProps) {
   const [currentStage, setCurrentStage] = useState<SearchStage>('searching');
   const [result, setResult] = useState<SearchPipelineResult | null>(null);
   const [newQuery, setNewQuery] = useState('');
@@ -186,6 +187,9 @@ export function SearchPipeline({ query, onBack, onNewSearch, userRole, teachingT
             )}
             {classroomContext?.town && (
               <span className="ml-1">· Localised for {classroomContext.town}{classroomContext.state ? `, ${classroomContext.state}` : ''}</span>
+            )}
+            {webSearchEnabled && (
+              <span className="ml-1 text-amber-600">· Web search included (Bronze tier)</span>
             )}
           </p>
         </div>
