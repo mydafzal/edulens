@@ -110,3 +110,91 @@ export interface SearchResult {
   queryTime: number;
   suggestions?: string[];
 }
+
+// ---- New Types for Redesigned System ----
+
+export type UserRole =
+  | 'teacher'
+  | 'publisher'
+  | 'specialist'
+  | 'curriculum-designer'
+  | 'instructional-coach';
+
+export interface UserProfile {
+  email: string;
+  name: string;
+  role: UserRole;
+  schoolName?: string;
+  state?: string;
+  suburb?: string;
+  yearLevels?: string[];
+  subjects?: string[];
+  avatar?: string;
+}
+
+export interface ToolCard {
+  id: string;
+  title: string;
+  description: string;
+  icon: string; // lucide icon name
+  roles: UserRole[]; // which roles see this tool
+  comingSoon?: boolean;
+}
+
+// Search pipeline stages
+export type SearchStage =
+  | 'idle'
+  | 'query-expansion'
+  | 'rag-retrieval'
+  | 'source-verification'
+  | 'dual-agent-review'
+  | 'scoring'
+  | 'complete';
+
+export interface DualAgentReview {
+  goodCop: {
+    verdict: 'approve' | 'conditional';
+    positivePoints: string[];
+    rating: number; // 0-10
+    summary: string;
+  };
+  badCop: {
+    verdict: 'approve' | 'flag' | 'reject';
+    concerns: string[];
+    rating: number; // 0-10
+    summary: string;
+  };
+  consensusScore: number; // averaged
+}
+
+export interface SearchPipelineResult {
+  query: string;
+  expandedQueries: string[];
+  stage: SearchStage;
+  ragSources: RAGSource[];
+  dualAgentReview: DualAgentReview;
+  summary: string;
+  references: Reference[];
+  rawContent: string;
+  totalTime: number;
+}
+
+export interface RAGSource {
+  id: string;
+  title: string;
+  url: string;
+  snippet: string;
+  trustTier: 'gold' | 'silver' | 'bronze';
+  relevanceScore: number;
+  provider: string;
+}
+
+export interface Reference {
+  id: string;
+  title: string;
+  authors: string[];
+  url: string;
+  publishDate: string;
+  source: string;
+  citationAPA: string;
+}

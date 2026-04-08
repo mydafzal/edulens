@@ -4,3 +4,7 @@ export { ResourceCard } from './ResourceCard';
 export { LocalizationPanel } from './LocalizationPanel';
 export { AppShell, MobileBottomNav, DesktopSidebar } from './Navigation';
 export { StatCard } from './StatCard';
+export { LandingPage } from './LandingPage';
+export { RoleSelection } from './RoleSelection';
+export { Dashboard } from './Dashboard';
+export { SearchPipeline } from './SearchPipeline';
