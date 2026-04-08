@@ -1,100 +1,98 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 "use client"
-import { MoveUpRight } from 'lucide-react'
-import React, { useMemo, useRef, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { ArrowUpRight } from 'lucide-react';
+import React, { useMemo, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function EmailVerify() {
-    const OTP_LENGTH = 6
-    const [otp, setOtp] = useState<string[]>(Array.from({ length: OTP_LENGTH }, () => ""))
-    const inputsRef = useRef<Array<HTMLInputElement | null>>([])
+    const OTP_LENGTH = 6;
+    const [otp, setOtp] = useState<string[]>(Array.from({ length: OTP_LENGTH }, () => ""));
+    const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
-    const otpValue = useMemo(() => otp.join(""), [otp])
+    const otpValue = useMemo(() => otp.join(""), [otp]);
 
     const focusIndex = (idx: number) => {
-        inputsRef.current[idx]?.focus()
-    }
+        inputsRef.current[idx]?.focus();
+    };
 
     const setCharAt = (idx: number, value: string) => {
         setOtp((prev) => {
-            const next = [...prev]
-            next[idx] = value
-            return next
-        })
-    }
+            const next = [...prev];
+            next[idx] = value;
+            return next;
+        });
+    };
 
     return (
-        <div className="w-full max-w-[446px]">
-            <div className="space-y-2 text-center">
-                <h1 className="text-[40px] font-bold leading-[40px] text-[#1E1E1E]">Email Verification</h1>
-                <p className="mx-auto max-w-[315px] text-[16px] font-medium leading-[19px] text-[#77797E]">
-                    We&apos;ve sent a 6-character code to your email. The code expires shortly, so enter it soon.
+        <div className="w-full">
+            <div className="mb-8 space-y-1.5 text-center">
+                <h1 className="text-[32px] font-bold leading-tight text-[#0f172a]">Email Verification</h1>
+                <p className="text-[14px] text-[#64748b] max-w-[280px] mx-auto">
+                    We&apos;ve sent a 6-character code to your email. Enter it below before it expires.
                 </p>
             </div>
 
             <form
-                className="mt-[50px] space-y-[50px]"
+                className="space-y-8"
                 onSubmit={(e) => {
-                    e.preventDefault()
+                    e.preventDefault();
                     // TODO: hook into verification action
-                    void otpValue
+                    void otpValue;
                 }}
             >
-                <div className="flex h-[60px] w-full items-center justify-center gap-[13px]">
+                {/* OTP inputs */}
+                <div className="flex w-full items-center justify-center gap-2.5">
                     {Array.from({ length: OTP_LENGTH }).map((_, idx) => {
-                        const isDividerAfter = idx === 2
+                        const isDividerAfter = idx === 2;
                         return (
                             <React.Fragment key={idx}>
                                 <Input
-                                    ref={(el) => {
-                                        inputsRef.current[idx] = el
-                                    }}
+                                    ref={(el) => { inputsRef.current[idx] = el; }}
                                     value={otp[idx]}
                                     onChange={(e) => {
-                                        const raw = e.target.value
-                                        const digit = raw.replace(/\D/g, "").slice(-1)
-                                        setCharAt(idx, digit)
-                                        if (digit && idx < OTP_LENGTH - 1) focusIndex(idx + 1)
+                                        const digit = e.target.value.replace(/\D/g, "").slice(-1);
+                                        setCharAt(idx, digit);
+                                        if (digit && idx < OTP_LENGTH - 1) focusIndex(idx + 1);
                                     }}
                                     onKeyDown={(e) => {
                                         if (e.key === "Backspace" && !otp[idx] && idx > 0) {
-                                            focusIndex(idx - 1)
+                                            focusIndex(idx - 1);
                                         }
                                     }}
                                     inputMode="numeric"
                                     autoComplete="one-time-code"
-                                    className="h-[60px] w-[60px] rounded-full border-0 bg-white px-0 text-center text-[18px] font-medium text-[#77797E] placeholder:text-[#CCCCCC] focus-visible:ring-0 focus-visible:ring-offset-0"
-                                    placeholder="-"
+                                    className="h-[52px] w-[52px] rounded-[12px] border-0 bg-white px-0 text-center text-[18px] font-semibold text-[#0f172a] placeholder:text-[#94a3b8] focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:shadow-[0_0_0_2px_rgba(0,0,0,0.08)]"
+                                    placeholder="–"
                                 />
-                                {isDividerAfter ? (
-                                    <div className="h-0 w-[10px] border border-white" />
-                                ) : null}
+                                {isDividerAfter && (
+                                    <div className="w-3 h-px bg-[#e2e8f0]" />
+                                )}
                             </React.Fragment>
-                        )
+                        );
                     })}
                 </div>
 
-                <div className="flex w-full items-center justify-between gap-[50px]">
+                <div className="flex w-full items-center justify-between gap-4">
                     <Button
                         type="button"
                         variant="outline"
-                        className="h-[60px] w-[147px] rounded-full border border-[#E5E5E5] bg-white px-[25px] text-[18px] font-medium text-[#77797E] hover:bg-white"
+                        className="h-[52px] rounded-full border border-[#e2e8f0] bg-white px-5 text-[14px] font-medium text-[#64748b] hover:bg-white"
                     >
                         Resend 0:25
                     </Button>
 
                     <Button
                         type="submit"
-                        className="flex h-[60px] w-[138px] items-center justify-between rounded-full bg-[#312F2F] px-0 pl-[25px] pr-[5px] text-white hover:bg-[#312F2F]/90"
+                        className="flex items-center justify-between h-[52px] bg-[#0f172a] text-white rounded-full pl-6 pr-2 min-w-[130px] hover:bg-[#1e293b] gap-3"
                     >
-                        <span className="text-[18px] font-medium leading-[22px]">Verify</span>
-                        <span className="flex h-[50px] w-[50px] items-center justify-center rounded-full bg-white text-black">
-                            <MoveUpRight className="h-5 w-5" />
+                        <span className="text-[14px] font-medium">Verify</span>
+                        <span className="w-9 h-9 bg-white rounded-full flex items-center justify-center shrink-0">
+                            <ArrowUpRight className="h-4 w-4 text-[#0f172a]" />
                         </span>
                     </Button>
                 </div>
             </form>
         </div>
-    )
+    );
 }

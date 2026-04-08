@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "EduLens - AI-Powered Resource Discovery for Educators",
+  title: "Scora — AI Resource Discovery for Educators",
   description: "Find, evaluate, and adapt high-quality teaching resources tailored to your classroom context. Built for the Cambridge University Press & Assessment Hackathon 2025.",
   keywords: ["education", "teaching resources", "curriculum", "AI", "localization", "Australia"],
 };

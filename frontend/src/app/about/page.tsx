@@ -13,7 +13,7 @@ export default function AboutPage() {
           <p className="text-[11px] uppercase tracking-wide font-medium text-primary mb-3">
             Cambridge Hackathon 2025
           </p>
-          <h1 className="text-[28px] font-bold mb-3">About EduLens</h1>
+          <h1 className="text-[28px] font-bold mb-3">About Scora</h1>
           <p className="text-[15px] text-muted-foreground max-w-xl mx-auto">
             AI-powered resource discovery for Australian educators.
             Find, evaluate, and adapt teaching resources for your local classroom context.
@@ -28,7 +28,7 @@ export default function AboutPage() {
             content that is both academically rigorous and relevant to their students&apos; local context.
           </p>
           <p className="text-[15px] text-muted-foreground">
-            EduLens addresses this by combining AI-powered search with quality evaluation and
+            Scora addresses this by combining AI-powered search with quality evaluation and
             one-click localization, helping teachers find resources that work for their specific classroom.
           </p>
         </div>

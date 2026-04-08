@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           <div>
             <h2 className="text-[15px] font-semibold mb-2">Data We Collect</h2>
             <p className="text-[15px] text-muted-foreground mb-3">
-              EduLens collects minimal data to provide personalized resource recommendations:
+              Scora collects minimal data to provide personalized resource recommendations:
             </p>
             <ul className="list-disc pl-5 text-[15px] text-muted-foreground space-y-1">
               <li>School name and location (for localization)</li>

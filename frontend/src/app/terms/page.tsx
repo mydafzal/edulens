@@ -21,7 +21,7 @@ export default function TermsPage() {
           <div>
             <h2 className="text-[15px] font-semibold mb-2">Hackathon Project</h2>
             <p className="text-[15px] text-muted-foreground">
-              EduLens is a prototype developed for the Cambridge University Press & Assessment
+              Scora is a prototype developed for the Cambridge University Press & Assessment
               Hackathon 2025. It is provided for demonstration purposes only.
             </p>
           </div>
@@ -38,7 +38,7 @@ export default function TermsPage() {
           <div>
             <h2 className="text-[15px] font-semibold mb-2">Resource Attribution</h2>
             <p className="text-[15px] text-muted-foreground">
-              EduLens displays resources from various trusted sources. Original licensing
+              Scora displays resources from various trusted sources. Original licensing
               and attribution requirements apply. Users are responsible for complying with
               the license terms of any resources they use.
             </p>

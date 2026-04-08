@@ -1,30 +1,29 @@
-
-import { MoveUpRight } from 'lucide-react'
-
+import { ArrowUpRight } from 'lucide-react';
+import Link from 'next/link';
 
 export default function EmailSuccess() {
-
-
     return (
-        <div className='w-full min-h-full  flex items-center justify-center bg-[#F6F6F6]'>
-            <div className='w-[396px] h-[60px] mt-[-150px] flex flex-col gap-11'>
-                <div className=' '>
-                    <h1 className='text-[40px] font-bold text-center'>Email Verification
-                        Successful 🚀</h1>
-                </div>
+        <div className="w-full text-center">
+            <div className="mb-8 space-y-1.5">
+                <h1 className="text-[32px] font-bold leading-tight text-[#0f172a]">
+                    Email Verification<br />Successful 🚀
+                </h1>
+                <p className="text-[14px] text-[#64748b]">
+                    Your account is ready. Let&apos;s get started.
+                </p>
+            </div>
 
-                <div className='w-full flex items-center justify-center'>
-                    <button type='submit' className='bg-black pl-[25px] py-[5px] pr-1.5  w-[162px] h-[60px] flex items-center justify-between rounded-full text-white cursor-pointer'>
-                        <span className='text-lg font-[500px]'>Continue
-                        </span>
-                        <button className='w-[50px] text-black bg-white h-[50px] rounded-full flex items-center justify-center'>
-                            <MoveUpRight />
-                        </button>
-                    </button>
-                </div>
-
-
-            </div >
-        </div >
-    )
+            <div className="flex justify-center">
+                <Link
+                    href="/auth/login"
+                    className="flex items-center justify-between h-[52px] bg-[#0f172a] text-white rounded-full pl-6 pr-2 min-w-[150px] hover:bg-[#1e293b] gap-3"
+                >
+                    <span className="text-[14px] font-medium">Continue</span>
+                    <span className="w-9 h-9 bg-white rounded-full flex items-center justify-center shrink-0">
+                        <ArrowUpRight className="h-4 w-4 text-[#0f172a]" />
+                    </span>
+                </Link>
+            </div>
+        </div>
+    );
 }

@@ -4,7 +4,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* EduLens Design System - Following Design Guidelines */
+/* Prevent horizontal overflow on all viewports */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Scora Design System - Following Design Guidelines */
 @theme inline {
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: ui-monospace, monospace;

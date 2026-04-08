@@ -1,4 +1,4 @@
-// EduLens Type Definitions
+// Scora Type Definitions
 
 export type QualityLevel = 'safe' | 'caution' | 'warning';
 
