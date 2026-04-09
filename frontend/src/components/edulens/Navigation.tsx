@@ -128,7 +128,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] flex items-start justify-center pt-20 px-4 bg-black/40"
+      className="fixed inset-0 z-[9999] flex items-start justify-center pt-20 px-4 bg-black/40"
       onClick={onClose}
     >
       <motion.div
@@ -136,7 +136,7 @@ function SearchModal({ onClose }: { onClose: () => void }) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl bg-white rounded-[16px] shadow-xl overflow-hidden"
+        className="w-full max-w-xl bg-white rounded-[16px] shadow-xl overflow-hidden z-[10000]"
       >
         <div className="flex items-center gap-3 px-4 py-3 border-b border-[#f0f0f0]">
           <Search className="w-5 h-5 text-[#94a3b8] shrink-0" />
@@ -221,7 +221,7 @@ function NotificationsDropdown({ onClose }: { onClose: () => void }) {
   return (
     <div
       ref={dropRef}
-      className="absolute right-0 top-full mt-2 w-[320px] bg-white border border-[#e2e8f0] rounded-[16px] shadow-xl z-[150] overflow-hidden"
+      className="absolute right-0 top-full mt-2 z-[9999] bg-white border border-[#e2e8f0] rounded-[16px] shadow-xl min-w-[320px] max-h-[400px] overflow-y-auto"
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#f0f0f0]">
         <p className="text-[15px] font-semibold text-[#0f172a]">Notifications</p>
@@ -273,17 +273,14 @@ function AvatarDropdown({ name, role, initial, onClose }: { name: string; role: 
   }, [onClose]);
 
   const handleSignOut = () => {
-    localStorage.removeItem('scora-token');
-    localStorage.removeItem('edulens-role');
-    localStorage.removeItem('scora-role');
-    localStorage.removeItem('edulens-profile-completed');
-    router.replace('/auth/login');
+    localStorage.clear();
+    window.location.href = '/auth/login';
   };
 
   return (
     <div
       ref={dropRef}
-      className="absolute right-0 top-full mt-2 w-[220px] bg-white border border-[#e2e8f0] rounded-[16px] shadow-xl z-[150] overflow-hidden"
+      className="absolute right-0 top-full mt-2 z-[9999] bg-white border border-[#e2e8f0] rounded-[16px] shadow-xl min-w-[200px]"
     >
       <div className="px-4 py-3 border-b border-[#f0f0f0]">
         <p className="text-[14px] font-semibold text-[#0f172a]">{name}</p>
@@ -350,7 +347,7 @@ export function TopNav() {
 
   return (
     <>
-      <header className="h-[72px] bg-white border-b border-[#f0f0f0] flex items-center justify-between px-8 w-full overflow-hidden">
+      <header className="h-[72px] bg-white border-b border-[#f0f0f0] flex items-center justify-between px-8 w-full relative z-[100] rounded-t-[24px]">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
           <div className="w-8 h-8 rounded-full border-[1.5px] border-[#0f172a] flex items-center justify-center p-1">
@@ -389,7 +386,7 @@ export function TopNav() {
           </button>
 
           {/* Notifications */}
-          <div className="relative">
+          <div className="relative z-[100]">
             <button
               aria-label="Notifications"
               onClick={() => { setShowNotifs((p) => !p); setShowAvatar(false); }}
@@ -416,7 +413,7 @@ export function TopNav() {
           </div>
 
           {/* Avatar */}
-          <div className="relative">
+          <div className="relative z-[100]">
             <button
               onClick={() => { setShowAvatar((p) => !p); setShowNotifs(false); }}
               className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
@@ -494,11 +491,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#f0f0f0] overflow-x-hidden">
       <div
-        className="bg-white overflow-x-hidden flex flex-col"
+        className="bg-white flex flex-col overflow-visible"
         style={{ borderRadius: 24, margin: '16px', maxWidth: 'calc(100vw - 32px)', minHeight: 'calc(100vh - 32px)' }}
       >
         <TopNav />
-        <main className="flex-1 pb-24 md:pb-0">{children}</main>
+        <main className="flex-1 pb-24 md:pb-0 relative overflow-hidden">{children}</main>
 
         {/* Footer */}
         <footer className="border-t border-[#f0f0f0] px-8 py-4 flex items-center justify-between">
