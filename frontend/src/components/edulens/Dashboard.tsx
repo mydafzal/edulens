@@ -12,19 +12,41 @@ import {
   RotateCcw,
   ArrowRight,
   ArrowUpRight,
+  Plus,
+  FileText,
+  ClipboardList,
+  HelpCircle,
+  RefreshCw,
+  BarChart2,
+  CheckSquare,
+  MessageSquare,
+  Monitor,
+  AlignLeft,
+  Map,
+  Shield,
+  GitMerge,
+  Lock,
+  Users,
+  FileCheck,
+  BookOpen,
+  Play,
 } from 'lucide-react';
 import { SearchPipeline } from './SearchPipeline';
 import {
   GRADE_LEVELS,
+  SOURCE_BANK,
   defaultClassroomContext,
+  getToolsForRole,
 } from '@/data/mockData';
 import type {
   GradeLevelId,
   ClassroomContextData,
   ChatHistoryItem,
+  ToolDefinition,
 } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
 // Static sidebar data
@@ -44,11 +66,19 @@ const automationAlerts = [
   },
 ];
 
-const recentActivityItems = [
+const FALLBACK_ACTIVITY = [
   { text: 'Searched "water scarcity Year 9 Geography"', time: '2h ago' },
   { text: 'Saved Climate Data Visualization Tool', time: 'Yesterday' },
   { text: 'Adapted Murray-Darling Basin article', time: '3 days ago' },
 ];
+
+const suggestedSources = SOURCE_BANK.slice(0, 3);
+
+const TOOL_ICON_MAP: Record<string, React.ElementType> = {
+  FileText, ClipboardList, HelpCircle, RefreshCw, BarChart2,
+  CheckSquare, MessageSquare, Monitor, AlignLeft, Map,
+  Shield, GitMerge, Lock, Users, Globe, FileCheck, BookOpen, Youtube: Play,
+};
 
 // ---------------------------------------------------------------------------
 // Dropdown picker (Quick Classroom Setup)
@@ -184,18 +214,18 @@ export default function Dashboard() {
   // Profile display name
   const [displayName, setDisplayName] = useState('Teacher');
 
+  // Dynamic recent activity from API
+  const [recentActivity, setRecentActivity] = useState<{ text: string; time: string }[]>(FALLBACK_ACTIVITY);
+
   // Load persisted state on mount
   useEffect(() => {
+    // Classroom context
     try {
       const ctx = localStorage.getItem('scora-classroom-context');
       if (ctx) setClassroomContext(JSON.parse(ctx));
     } catch { /* ignore */ }
 
-    try {
-      const hist = localStorage.getItem('scora-chat-history');
-      if (hist) setChatHistory(JSON.parse(hist));
-    } catch { /* ignore */ }
-
+    // Profile
     try {
       const profile = localStorage.getItem('scora-profile');
       if (profile) {
@@ -209,7 +239,50 @@ export default function Dashboard() {
           else setTeachingTo('senior');
         }
       }
+      // Also try scora-user for display name
+      const user = localStorage.getItem('scora-user');
+      if (user) {
+        const u = JSON.parse(user);
+        if (u.name) setDisplayName(u.name);
+      }
     } catch { /* ignore */ }
+
+    // Chat history — try API first, fall back to localStorage
+    const loadHistory = async () => {
+      try {
+        const apiHistory = await api.getSearchHistory();
+        if (Array.isArray(apiHistory) && apiHistory.length > 0) {
+          const mapped: ChatHistoryItem[] = apiHistory.map((h: Record<string, unknown>) => ({
+            id: String(h.id || Date.now()),
+            query: String(h.query || ''),
+            teachingTo: (h.grade_level as GradeLevelId) || 'middle',
+            timestamp: String(h.created_at || new Date().toISOString()),
+          }));
+          setChatHistory(mapped);
+          setRecentActivity(mapped.slice(0, 3).map((h) => ({
+            text: `Searched "${h.query}"`,
+            time: timeAgo(h.timestamp),
+          })));
+          return;
+        }
+      } catch { /* fall through to localStorage */ }
+
+      try {
+        const hist = localStorage.getItem('scora-chat-history');
+        if (hist) {
+          const parsed: ChatHistoryItem[] = JSON.parse(hist);
+          setChatHistory(parsed);
+          if (parsed.length > 0) {
+            setRecentActivity(parsed.slice(0, 3).map((h) => ({
+              text: `Searched "${h.query}"`,
+              time: timeAgo(h.timestamp),
+            })));
+          }
+        }
+      } catch { /* ignore */ }
+    };
+
+    loadHistory();
   }, []);
 
   const showNotification = useCallback((msg: string) => {
@@ -256,12 +329,21 @@ export default function Dashboard() {
     localStorage.removeItem('scora-chat-history');
   }, []);
 
-  const handleCreateClassroom = () => {
+  const handleCreateClassroom = async () => {
     const parts: string[] = [];
     if (yearLevel) parts.push(yearLevel);
     if (course) parts.push(course);
     if (location) parts.push(location);
     if (parts.length === 0) { router.push('/profile'); return; }
+
+    const profile = { year_level: yearLevel, course, location };
+    try {
+      const user = localStorage.getItem('scora-user');
+      const userId = user ? JSON.parse(user).id : null;
+      if (userId) await api.saveProfile(userId, profile);
+    } catch { /* ignore */ }
+    localStorage.setItem('scora-classroom-quick', JSON.stringify(profile));
+
     showNotification(`Classroom set: ${parts.join(' · ')}`);
   };
 
@@ -420,6 +502,7 @@ export default function Dashboard() {
               >
                 <Search className="w-[18px] h-[18px] text-[#94a3b8] shrink-0" />
                 <input
+                  id="main-search-input"
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
@@ -499,6 +582,52 @@ export default function Dashboard() {
               </div>
             </section>
 
+            {/* ── Tools Section ── */}
+            <section className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[20px] p-6 mt-6">
+              {(() => {
+                const role = typeof window !== 'undefined' ? (localStorage.getItem('scora-role') || 'teacher') : 'teacher';
+                const roleTools = getToolsForRole(role).slice(0, 8);
+                return (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-[18px] font-bold text-[#0f172a]">Your Tools</h2>
+                      <div className="flex items-center gap-3">
+                        <span className="bg-[#ede9fe] text-[#6d28d9] rounded-full text-[12px] px-3 py-1 capitalize">{role}</span>
+                        <button onClick={() => router.push('/tools')} className="text-[#64748b] text-[13px] hover:text-[#0f172a] transition-colors">See All →</button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                      {roleTools.map((tool) => {
+                        const Icon = TOOL_ICON_MAP[tool.icon] || FileText;
+                        return (
+                          <button
+                            key={tool.id}
+                            onClick={() => {
+                              setInputValue(`Use ${tool.title}: `);
+                              document.getElementById('main-search-input')?.focus();
+                              showNotification('Tool selected — add your topic and search');
+                            }}
+                            className="bg-white border border-[#e2e8f0] rounded-[14px] p-4 text-left cursor-pointer hover:border-[#0f172a] hover:shadow-sm transition-all"
+                          >
+                            <Icon className="w-5 h-5 text-[#0f172a] mb-2" />
+                            <p className="text-[14px] font-semibold text-[#0f172a]">{tool.title}</p>
+                            <p className="text-[12px] text-[#64748b] mt-1 line-clamp-2">{tool.description}</p>
+                          </button>
+                        );
+                      })}
+                      <button
+                        onClick={() => router.push('/tools')}
+                        className="bg-[#f0f0f0] border border-dashed border-[#e2e8f0] rounded-[14px] p-4 text-left cursor-pointer hover:border-[#94a3b8] transition-all"
+                      >
+                        <Plus className="w-5 h-5 text-[#94a3b8] mb-2" />
+                        <p className="text-[14px] font-semibold text-[#64748b]">Explore All Tools</p>
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
+            </section>
+
             {/* ── Suggested For You ── */}
             <section>
               <div className="flex items-center justify-between mb-3">
@@ -514,27 +643,27 @@ export default function Dashboard() {
                 </button>
               </div>
               <div className="flex gap-4 overflow-x-auto pb-2">
-                {['Geography', 'Science', 'History'].map((subject) => (
+                {suggestedSources.map((source) => (
                   <div
-                    key={subject}
+                    key={source.id}
                     className="min-w-[280px] max-w-[280px] flex flex-col bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden p-4"
                   >
                     <span className="self-start border border-[#e2e8f0] rounded-full text-[12px] px-3 py-1 text-[#64748b]">
-                      {subject}
+                      {source.subject}
                     </span>
                     <h3 className="text-[16px] font-semibold text-[#0f172a] mt-2 leading-snug">
-                      Explore {subject} Resources
+                      {source.title}
                     </h3>
                     <p className="text-[13px] text-[#64748b] mt-1 line-clamp-3 flex-1">
-                      Curated teaching materials aligned to the Australian curriculum.
+                      {source.snippet}
                     </p>
                     <div className="flex items-center justify-between mt-4">
-                      <span className="text-[12px] text-[#94a3b8]">EduLens</span>
+                      <span className="text-[12px] text-[#94a3b8]">{source.provider}</span>
                       <button
                         onClick={() => {
-                          setTeachingTo('middle');
-                          setInputValue(`${subject} Year 9`);
-                          handleSearch(`${subject} Year 9`);
+                          setTeachingTo(source.grade_level as GradeLevelId || 'middle');
+                          setInputValue(source.subject);
+                          handleSearch(source.subject);
                         }}
                         aria-label="Explore"
                         className="w-9 h-9 bg-[#0f172a] rounded-full flex items-center justify-center hover:bg-[#1e293b] transition-colors shrink-0"
@@ -653,11 +782,11 @@ export default function Dashboard() {
                 </button>
               </div>
               <div className="space-y-0">
-                {recentActivityItems.map((item, i) => (
+                {recentActivity.map((item, i) => (
                   <div
                     key={i}
                     className={`flex items-center gap-3 py-[10px] ${
-                      i < recentActivityItems.length - 1 ? 'border-b border-[#f0f0f0]' : ''
+                      i < recentActivity.length - 1 ? 'border-b border-[#f0f0f0]' : ''
                     }`}
                   >
                     <Search className="w-4 h-4 text-[#94a3b8] shrink-0" />
