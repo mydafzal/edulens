@@ -159,6 +159,8 @@ class SearchRequest(BaseModel):
     scope: ScopeLevel = ScopeLevel.state
     filters: Optional[SearchFilters] = None
     classroom_profile: Optional[ClassroomProfile] = Field(None, alias="classroomProfile")
+    user_id: Optional[str] = None
+    grade_level: Optional[str] = None
 
     class Config:
         populate_by_name = True

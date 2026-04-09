@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -49,44 +50,83 @@ type FilterTab = (typeof FILTER_TABS)[number];
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
+// Normalise a backend flat resource (or existing Resource) into a display shape
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalise(r: any): any {
+  return {
+    id: r.resource_id || r.id,
+    title: r.title,
+    description: r.snippet || r.description || '',
+    tags: r.curriculum_codes || r.tags || [],
+    type: r.type || 'article',
+    thumbnail: r.thumbnail || null,
+    source: { name: r.provider || r.source?.name, url: r.url || r.source?.url },
+    scorecard: { overallScore: r.quality_score ?? r.scorecard?.overallScore ?? 0 },
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getDemoLibraryResources(): any[] {
+  return [sampleResources[0], sampleResources[2]].map(normalise);
+}
+
 export default function LibraryPage() {
-  const [savedResources, setSavedResources] = useState<Resource[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [savedResources, setSavedResources] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
-  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [selectedResource, setSelectedResource] = useState<any | null>(null);
 
   // right-column filter state
   const [tags, setTags] = useState<string[]>(['Water Scarcity', 'Water', 'Sustainability']);
 
   useEffect(() => {
-    const saved = localStorage.getItem('edulens-library');
-    if (saved) {
+    const load = async () => {
       try {
-        const parsed = JSON.parse(saved);
-        setSavedResources(parsed.length > 0 ? parsed : [sampleResources[0], sampleResources[2]]);
+        const apiResources = await api.getLibrary();
+        if (Array.isArray(apiResources) && apiResources.length > 0) {
+          setSavedResources(apiResources.map(normalise));
+        } else {
+          throw new Error('empty');
+        }
       } catch {
-        setSavedResources([sampleResources[0], sampleResources[2]]);
+        // Fall back to localStorage, then demo data
+        try {
+          const saved = localStorage.getItem('edulens-library');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            setSavedResources(parsed.length > 0 ? parsed.map(normalise) : getDemoLibraryResources());
+          } else {
+            setSavedResources(getDemoLibraryResources());
+          }
+        } catch {
+          setSavedResources(getDemoLibraryResources());
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      // Demo fallback: pre-populate with 2 resources
-      setSavedResources([sampleResources[0], sampleResources[2]]);
-    }
-    setIsLoading(false);
+    };
+
+    load();
 
     // Check for ?resource= param
     const params = new URLSearchParams(window.location.search);
     const rid = params.get('resource');
     if (rid) {
       const found = sampleResources.find((r) => r.id === rid);
-      if (found) setSelectedResource(found);
+      if (found) setSelectedResource(normalise(found));
     }
   }, []);
 
-  const handleRemove = (resourceId: string) => {
+  const handleRemove = async (resourceId: string) => {
     const updated = savedResources.filter((r) => r.id !== resourceId);
     setSavedResources(updated);
     localStorage.setItem('edulens-library', JSON.stringify(updated));
+    try {
+      await api.removeFromLibrary(resourceId);
+    } catch { /* ignore */ }
     showToast('Resource removed from library.');
   };
 
@@ -385,7 +425,8 @@ function ResourceRow({
   onRemove,
   onSelect,
 }: {
-  resource: Resource;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  resource: any;
   isLast: boolean;
   onRemove: (id: string) => void;
   onSelect: () => void;
@@ -397,7 +438,7 @@ function ResourceRow({
         <h4 className="text-[16px] font-semibold text-[#0f172a] leading-snug hover:underline">{resource.title}</h4>
         {resource.tags && resource.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
-            {resource.tags.slice(0, 4).map((tag) => (
+            {resource.tags.slice(0, 4).map((tag: string) => (
               <span key={tag} className="border border-[#e2e8f0] rounded-full text-[11px] px-2 py-1 text-[#64748b]">
                 {tag}
               </span>
