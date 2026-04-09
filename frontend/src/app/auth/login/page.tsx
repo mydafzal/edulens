@@ -2,6 +2,7 @@
 import { Eye, EyeOff, ArrowUpRight } from 'lucide-react';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
 import google from "../../../../public/assets/auth/google.svg";
 import Image from 'next/image';
 import Link from 'next/link';
@@ -17,8 +18,22 @@ export default function Login() {
         setIsPasswordVisible((prev) => !prev);
     };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const email = formData.get('email') as string;
+        try {
+            const userData = await api.login(email);
+            localStorage.setItem('scora-user', JSON.stringify(userData));
+        } catch {
+            // API unavailable — store a local placeholder
+            localStorage.setItem('scora-user', JSON.stringify({
+                id: null,
+                email,
+                name: email.split('@')[0],
+                role: 'teacher',
+            }));
+        }
         localStorage.setItem('scora-token', 'demo');
         router.push('/role');
     };
